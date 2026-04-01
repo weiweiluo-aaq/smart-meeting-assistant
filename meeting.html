@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议空间 - 智能会议助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="optimized-styles.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <!-- 头部 -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <a href="index.html" class="text-blue-600 hover:text-blue-800 flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>返回首页
+                </a>
+            </div>
+            <div class="text-center">
+                <h1 id="meeting-title" class="text-2xl font-bold text-gray-800">会议空间</h1>
+                <p id="meeting-id-display" class="text-sm text-gray-600 font-mono">加载中...</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="showMeetingInfo()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：二维码 -->
+            <section id="qrcode-section" class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">
+                        <i class="fas fa-qrcode text-blue-500 mr-2"></i>扫码参与
+                    </h2>
+                    <p class="text-gray-600 text-sm">请使用手机扫码输入会议内容</p>
+                </div>
+                
+                <div class="flex justify-center p-4 bg-gray-50 rounded-xl mb-4">
+                    <div id="qrcode" class="border-4 border-gray-200 rounded-lg p-2">
+                        <div class="flex flex-col items-center justify-center h-48">
+                            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p class="text-sm text-gray-600">二维码加载中...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 会议链接 -->
+                <div class="bg-blue-50 rounded-lg p-3">
+                    <p class="text-xs text-blue-700 mb-2">备用访问方式：</p>
+                    <div class="bg-white rounded p-2 break-all text-xs font-mono text-blue-900 mb-2" id="meeting-url">加载中...</div>
+                    <p class="text-xs text-blue-700">或在输入页面输入会议编号：<span id="meeting-id-copy" class="font-mono font-semibold">-</span></p>
+                </div>
+            </section>
+
+            <!-- 中间：主持人输入区 + 实时统计 -->
+            <section class="lg:col-span-1 space-y-6">
+                <!-- 主持人快速输入 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-edit text-purple-500 mr-2"></i>主持人记录
+                    </h2>
+                    <p class="text-sm text-gray-600 mb-4">快速记录讨论要点，会议结束后可生成纪要</p>
+                    
+                    <div class="space-y-3">
+                        <textarea id="host-input" rows="3" placeholder="输入会议讨论内容...&#10;每条内容请换行" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"></textarea>
+                        
+                        <!-- 快速模板 -->
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="insertTemplate('决议：')" class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200">
+                                <i class="fas fa-gavel mr-1"></i>决议
+                            </button>
+                            <button onclick="insertTemplate('行动项：')" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full hover:bg-green-200">
+                                <i class="fas fa-tasks mr-1"></i>行动项
+                            </button>
+                            <button onclick="insertTemplate('讨论：')" class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full hover:bg-yellow-200">
+                                <i class="fas fa-comments mr-1"></i>讨论
+                            </button>
+                            <button onclick="insertTemplate('备注：')" class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200">
+                                <i class="fas fa-sticky-note mr-1"></i>备注
+                            </button>
+                        </div>
+                        
+                        <button onclick="addHostContent()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition font-semibold">
+                            <i class="fas fa-plus mr-2"></i>添加记录
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 实时统计 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i>实时统计
+                    </h2>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <p class="text-2xl font-bold text-blue-600" id="stat-participants">0</p>
+                            <p class="text-xs text-gray-600">参与人数</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3">
+                            <p class="text-2xl font-bold text-green-600" id="stat-phone">0</p>
+                            <p class="text-xs text-gray-600">手机提交</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-3">
+                            <p class="text-2xl font-bold text-purple-600" id="stat-host">0</p>
+                            <p class="text-xs text-gray-600">主持人记录</p>
+                        </div>
+                    </div>
+                    <button onclick="refreshData()" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition text-sm">
+                        <i class="fas fa-sync-alt mr-2"></i>刷新数据
+                    </button>
+                </div>
+            </section>
+
+            <!-- 右侧：实时内容显示 -->
+            <section class="bg-white rounded-2xl shadow-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-list text-orange-500 mr-2"></i>实时内容
+                    </h2>
+                    <button onclick="refreshData()" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>刷新
+                    </button>
+                </div>
+                
+                <!-- 内容列表 -->
+                <div id="contents-list" class="space-y-3 max-h-[60vh] overflow-y-auto">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>暂无内容提交</p>
+                        <p class="text-sm">等待参会人员扫码输入...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部操作区 -->
+        <section class="mt-6 bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button onclick="analyzeMeeting()" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg transition font-semibold">
+                    <i class="fas fa-brain mr-2"></i>分析会议
+                </button>
+                <button onclick="generateMinutes()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg transition font-semibold">
+                    <i class="fas fa-file-alt mr-2"></i>生成会议纪要
+                </button>
+                <button onclick="exportMinutes()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg transition font-semibold">
+                    <i class="fas fa-download mr-2"></i>导出纪要
+                </button>
+                <button onclick="endMeeting()" class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg transition font-semibold">
+                    <i class="fas fa-stop-circle mr-2"></i>结束会议
+                </button>
+            </div>
+        </section>
+
+        <!-- 分析结果区域 -->
+        <section id="analysis-section" class="mt-6 bg-white rounded-2xl shadow-xl p-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    <i class="fas fa-chart-pie text-purple-500 mr-2"></i>分析结果
+                </h2>
+                <button onclick="closeAnalysis()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="analysis-content" class="prose max-w-none">
+                <!-- 分析结果将在这里显示 -->
+            </div>
+        </section>
+
+        <!-- 会议纪要区域 -->
+        <section id="minutes-section" class="mt-6 bg-white rounded-2xl shadow-xl p-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    <i class="fas fa-file-alt text-green-500 mr-2"></i>会议纪要
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="copyMinutes()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-copy mr-1"></i>复制
+                    </button>
+                    <button onclick="downloadMinutes()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-download mr-1"></i>下载
+                    </button>
+                    <button onclick="closeMinutes()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="minutes-content" class="bg-gray-50 rounded-lg p-4 max-h-[50vh] overflow-y-auto">
+                <!-- 会议纪要将在这里显示 -->
+            </div>
+        </section>
+    </div>
+
+    <!-- 会议信息弹窗 -->
+    <div id="meeting-info-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-800">会议信息</h3>
+                <button onclick="closeMeetingInfo()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 mb-1">会议编号</p>
+                    <p class="font-mono font-semibold text-lg" id="info-meeting-id">-</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 mb-1">创建时间</p>
+                    <p class="font-semibold" id="info-created-time">-</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 mb-1">当前状态</p>
+                    <p class="font-semibold">
+                        <span id="info-status" class="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">进行中</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结束会议确认弹窗 -->
+    <div id="end-meeting-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">确认结束会议？</h3>
+                <p class="text-gray-600 mb-6">结束会议后将停止接收新的内容提交，但可以继续查看历史记录和生成纪要。</p>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeEndMeeting()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg transition">
+                        取消
+                    </button>
+                    <button onclick="confirmEndMeeting()" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition font-semibold">
+                        确认结束
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="meeting.js?v=20260401"></script>
+    <script src="ai-analyzer.js?v=20260401"></script>
+    <script src="data-manager.js?v=20260401"></script>
+</body>
+</html>
