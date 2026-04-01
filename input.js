@@ -212,8 +212,33 @@ class MeetingInput {
             meetingId: this.meetingId
         };
 
-        // 保存到localStorage
+        // 显示提交中状态
+        const submitBtn = document.getElementById('submit-btn');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>提交中...';
+        submitBtn.disabled = true;
+
+        // 保存到localStorage（本地备份）
         this.saveContentToLocalStorage(contentData);
+
+        // 同步到云端API
+        try {
+            const response = await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    meetingId: this.meetingId,
+                    content: meetingContent,
+                    participant: participantName
+                })
+            });
+            const result = await response.json();
+            if (!result.success) {
+                console.warn('云端同步失败，数据已保存在本地:', result.error);
+            }
+        } catch (error) {
+            console.warn('云端同步失败（网络问题），数据已保存在本地:', error);
+        }
 
         // 显示成功弹窗
         this.showSuccessModal();
@@ -222,6 +247,8 @@ class MeetingInput {
         setTimeout(() => {
             document.getElementById('meeting-content').value = '';
             document.getElementById('char-count').textContent = '0/500';
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
         }, 1000);
     }
 

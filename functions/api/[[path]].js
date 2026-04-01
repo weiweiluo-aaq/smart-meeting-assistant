@@ -3,6 +3,23 @@
  * 用于会议数据的读写操作
  */
 
+// 处理 CORS 预检请求
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    }
+  });
+}
+
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
+
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -13,7 +30,7 @@ export async function onRequestGet(context) {
     if (!meetingId) {
       return new Response(
         JSON.stringify({ error: '缺少 meetingId 参数' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -22,13 +39,13 @@ export async function onRequestGet(context) {
 
     return new Response(
       JSON.stringify({ success: true, data: data || { contents: [], participants: [] } }),
-      { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      { headers: corsHeaders }
     );
   } catch (error) {
     console.error('读取数据失败:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -43,7 +60,7 @@ export async function onRequestPost(context) {
     if (!meetingId) {
       return new Response(
         JSON.stringify({ error: '缺少 meetingId 参数' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -76,13 +93,13 @@ export async function onRequestPost(context) {
 
     return new Response(
       JSON.stringify({ success: true, data: existingData }),
-      { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      { headers: corsHeaders }
     );
   } catch (error) {
     console.error('保存数据失败:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
