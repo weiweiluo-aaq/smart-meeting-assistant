@@ -204,6 +204,9 @@ class MeetingInput {
 
         // 显示成功弹窗
         this.showSuccessModal();
+        
+        // 通知会议空间即时刷新（通过localStorage事件）
+        this.notifyMeetingRoom();
 
         // 清空表单
         setTimeout(() => {
@@ -231,6 +234,20 @@ class MeetingInput {
             existingParticipants.push(contentData.participant);
             localStorage.setItem(participantsKey, JSON.stringify(existingParticipants));
         }
+    }
+    
+    // 通知会议空间即时刷新
+    notifyMeetingRoom() {
+        // 使用 localStorage 事件通知其他标签页
+        const notification = {
+            type: 'content_updated',
+            meetingId: this.meetingId,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('meeting_refresh_' + this.meetingId, JSON.stringify(notification));
+        // 触发 storage 事件
+        localStorage.setItem('meeting_refresh_trigger', Date.now().toString());
+        console.log('已通知会议空间刷新数据');
     }
 
     // 显示成功弹窗

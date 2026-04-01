@@ -252,9 +252,25 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <script src="meeting.js?v=20260401"></script>
+    <!-- QRCode库 - 使用多CDN备用 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="meeting.js?v=20260401b"></script>
     <script src="ai-analyzer.js?v=20260401"></script>
     <script src="data-manager.js?v=20260401"></script>
+    <!-- 备用QRCode库（延迟加载） -->
+    <script>
+        window.qrcodeBackupLoaded = false;
+        // 如果主库加载失败，5秒后加载备用库
+        setTimeout(() => {
+            if (typeof QRCode === 'undefined') {
+                console.log('QRCode库未加载，尝试备用库...');
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+                script.onload = () => { window.qrcodeBackupLoaded = true; console.log('备用QRCode库加载成功'); };
+                script.onerror = () => console.error('备用QRCode库也加载失败');
+                document.head.appendChild(script);
+            }
+        }, 5000);
+    </script>
 </body>
 </html>
