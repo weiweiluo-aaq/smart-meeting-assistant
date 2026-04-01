@@ -132,6 +132,8 @@ class MeetingInput {
     // 提交内容
     async submitContent() {
         const participantName = document.getElementById('participant-name').value.trim();
+        const lastWeek = document.getElementById('last-week').value.trim();
+        const thisWeek = document.getElementById('this-week').value.trim();
 
         // 验证姓名必填
         if (!participantName) {
@@ -140,24 +142,32 @@ class MeetingInput {
             return;
         }
 
+        // 验证上周关键结果必填
+        if (!lastWeek) {
+            this.showNotification('请填写上周关键结果', 'warning');
+            document.getElementById('last-week').focus();
+            return;
+        }
+
+        // 验证本周重点事项必填
+        if (!thisWeek) {
+            this.showNotification('请填写本周重点事项', 'warning');
+            document.getElementById('this-week').focus();
+            return;
+        }
+
         // 收集所有字段内容
         const contentData = {
             id: `CONTENT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
             participant: participantName,
-            lastWeek: document.getElementById('last-week').value.trim(),
-            thisWeek: document.getElementById('this-week').value.trim(),
+            lastWeek: lastWeek,
+            thisWeek: thisWeek,
             blockers: document.getElementById('blockers').value.trim(),
             risks: document.getElementById('risks').value.trim(),
             others: document.getElementById('others').value.trim(),
             timestamp: new Date().toISOString(),
             meetingId: this.meetingId
         };
-
-        // 检查是否至少填写了一项
-        if (!contentData.lastWeek && !contentData.thisWeek && !contentData.blockers && !contentData.risks && !contentData.others) {
-            this.showNotification('请至少填写一项汇报内容', 'warning');
-            return;
-        }
 
         // 显示提交中状态
         const submitBtn = document.getElementById('submit-btn');
