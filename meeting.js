@@ -217,7 +217,7 @@ class MeetingRoom {
             }
         });
         
-        ['meeting-info-modal', 'end-meeting-modal', 'analysis-modal', 'minutes-modal'].forEach(id => {
+        ['meeting-info-modal', 'end-meeting-modal', 'minutes-modal'].forEach(id => {
             document.getElementById(id)?.addEventListener('click', (e) => {
                 if (e.target.id === id) {
                     document.getElementById(id).classList.add('hidden');
@@ -295,17 +295,20 @@ class MeetingRoom {
         analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>连接中...';
         analyzeBtn.disabled = true;
         
-        // 显示悬浮模态框
-        const modal = document.getElementById('analysis-modal');
-        const container = document.getElementById('analysis-content');
-        container.innerHTML = `
+        // 显示分析结果区域
+        const displayArea = document.getElementById('analysis-display');
+        const resultContainer = document.getElementById('analysis-result');
+        resultContainer.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12">
                 <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p class="text-gray-600 mb-2">正在调用AI服务分析...</p>
                 <p class="text-sm text-gray-400">预计需要 5-15 秒</p>
             </div>
         `;
-        modal.classList.remove('hidden');
+        displayArea.classList.remove('hidden');
+        
+        // 滚动到分析结果区域
+        displayArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
         try {
             const apiSettings = JSON.parse(localStorage.getItem('apiSettings') || '{}');
@@ -323,7 +326,7 @@ class MeetingRoom {
             }
         } catch (error) {
             console.error('分析失败:', error);
-            container.innerHTML = `
+            resultContainer.innerHTML = `
                 <div class="text-center py-8">
                     <div class="text-red-500 text-5xl mb-4"><i class="fas fa-exclamation-circle"></i></div>
                     <p class="text-red-600 font-semibold mb-2">分析失败</p>
@@ -471,12 +474,9 @@ class MeetingRoom {
     
     // 显示AI分析结果
     showAIAnalysisResult(analysisText) {
-        const modal = document.getElementById('analysis-modal');
-        const container = document.getElementById('analysis-content');
-        
+        const container = document.getElementById('analysis-result');
         const htmlContent = this.markdownToHtml(analysisText);
         container.innerHTML = `<div class="prose max-w-none">${htmlContent}</div>`;
-        modal.classList.remove('hidden');
     }
     
     // 简单的Markdown转HTML
@@ -491,8 +491,7 @@ class MeetingRoom {
     }
     
     showAnalysisResult(result) {
-        const modal = document.getElementById('analysis-modal');
-        const container = document.getElementById('analysis-content');
+        const container = document.getElementById('analysis-result');
         
         const priorityStyles = {
             high: 'bg-red-100 text-red-800',
@@ -555,11 +554,11 @@ class MeetingRoom {
                 </div>
             ` : ''}
         `;
-        modal.classList.remove('hidden');
     }
     
-    closeAnalysis() {
-        document.getElementById('analysis-modal').classList.add('hidden');
+    clearAnalysis() {
+        document.getElementById('analysis-display').classList.add('hidden');
+        document.getElementById('analysis-result').innerHTML = '';
     }
     
     // 悬浮记录条功能
@@ -1079,7 +1078,7 @@ window.showMeetingInfo = () => window.meetingRoom?.showMeetingInfo();
 window.closeMeetingInfo = () => window.meetingRoom?.closeMeetingInfo();
 window.closeEndMeeting = () => window.meetingRoom?.closeEndMeeting();
 window.confirmEndMeeting = () => window.meetingRoom?.confirmEndMeeting();
-window.closeAnalysis = () => window.meetingRoom?.closeAnalysis();
+window.clearAnalysis = () => window.meetingRoom?.clearAnalysis();
 window.closeMinutes = () => window.meetingRoom?.closeMinutes();
 window.toggleFloatingBar = () => window.meetingRoom?.toggleFloatingBar();
 window.floatingAddContent = () => window.meetingRoom?.floatingAddContent();
