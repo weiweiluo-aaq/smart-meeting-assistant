@@ -11,19 +11,13 @@ class MeetingInput {
 
     init() {
         this.setupEventListeners();
-        this.displayMeetingId();
         this.setupCharacterCounter();
     }
 
     // 从URL获取会议ID
     getMeetingIdFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        return params.get('meeting') || 'UNKNOWN-MEETING';
-    }
-
-    // 显示会议ID
-    displayMeetingId() {
-        document.getElementById('meeting-id-display').textContent = this.meetingId;
+        return params.get('meeting') || params.get('id') || 'UNKNOWN-MEETING';
     }
 
     // 设置事件监听器
@@ -34,61 +28,22 @@ class MeetingInput {
         // 语音录制按钮
         document.getElementById('voice-record-btn').addEventListener('click', () => this.toggleVoiceRecord());
         
-        // 模板按钮
-        document.getElementById('add-important').addEventListener('click', () => this.addTag('重要事项：'));
-        document.getElementById('add-help').addEventListener('click', () => this.addTag('需要协助：'));
-        
         // 模态框关闭
         document.getElementById('close-modal-btn').addEventListener('click', () => this.closeSuccessModal());
-        
-        // 回车键提交
-        document.getElementById('meeting-content').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                this.submitContent();
-            }
-        });
     }
 
-    // 设置字符计数器
+    // 设置字符计数器（所有文本框）
     setupCharacterCounter() {
-        const contentInput = document.getElementById('meeting-content');
-        const charCount = document.getElementById('char-count');
+        const textareas = ['last-week', 'this-week', 'blockers', 'risks', 'others'];
         
-        contentInput.addEventListener('input', () => {
-            const length = contentInput.value.length;
-            charCount.textContent = `${length}/500`;
-            
-            if (length > 450) {
-                charCount.classList.add('text-yellow-600');
-                charCount.classList.remove('text-gray-500');
-            } else if (length >= 500) {
-                charCount.classList.add('text-red-600');
-                charCount.classList.remove('text-yellow-600');
-                contentInput.value = contentInput.value.substring(0, 500);
-            } else {
-                charCount.classList.remove('text-yellow-600', 'text-red-600');
-                charCount.classList.add('text-gray-500');
+        textareas.forEach(id => {
+            const textarea = document.getElementById(id);
+            if (textarea) {
+                textarea.addEventListener('input', () => {
+                    textarea.value = textarea.value.slice(0, 300);
+                });
             }
         });
-    }
-
-    // 添加标签
-    addTag(tag) {
-        const contentInput = document.getElementById('meeting-content');
-        const cursorPosition = contentInput.selectionStart;
-        const currentValue = contentInput.value;
-        
-        // 在光标位置插入标签
-        const newValue = currentValue.substring(0, cursorPosition) + tag + currentValue.substring(cursorPosition);
-        contentInput.value = newValue;
-        
-        // 将光标移动到标签后面
-        contentInput.selectionStart = contentInput.selectionEnd = cursorPosition + tag.length;
-        contentInput.focus();
-        
-        // 更新字符计数
-        const charCount = document.getElementById('char-count');
-        charCount.textContent = `${newValue.length}/500`;
     }
 
     // 切换语音录制
@@ -104,7 +59,6 @@ class MeetingInput {
             voiceStatus.textContent = '正在录音，再次点击停止...';
             voiceProgress.classList.remove('hidden');
             
-            // 模拟录音进度
             this.startRecordingProgress();
             
             // 模拟语音识别
@@ -118,7 +72,6 @@ class MeetingInput {
             voiceStatus.textContent = '录音已停止，正在识别...';
             clearTimeout(this.recordTimeout);
             
-            // 重置进度条
             document.getElementById('voice-progress-bar').style.width = '0%';
         }
     }
@@ -141,40 +94,36 @@ class MeetingInput {
         updateProgress();
     }
 
-    // 模拟语音识别
+    // 模拟语音识别 - 将内容填入第一个空字段
     simulateVoiceRecognition() {
         const voiceStatus = document.getElementById('voice-status');
-        const contentInput = document.getElementById('meeting-content');
         
         voiceStatus.textContent = '正在识别语音内容...';
         
-        // 模拟语音识别结果
         setTimeout(() => {
             const voiceResults = [
-                '我这边的项目进展顺利，已经完成了百分之八十的任务，预计下周可以完成全部开发工作。',
-                '需要协助解决数据库性能问题，查询速度比较慢，希望得到技术支持。',
-                '重要事项：下周三有客户来访，需要提前准备演示材料和会议室安排。',
-                '本周工作重点是完成API接口开发，目前遇到一些跨域问题需要解决。',
-                '建议讨论一下项目进度调整的可能性，因为某些外部资源延迟了。'
+                '上周完成了API接口开发和数据库优化工作。',
+                '本周重点是完成用户模块开发和进行系统测试。',
+                '遇到了跨域问题需要前端同事协助解决。',
+                '注意项目进度可能受第三方接口延迟影响。',
+                ''
             ];
             
             const randomResult = voiceResults[Math.floor(Math.random() * voiceResults.length)];
             
-            // 如果内容框为空，直接填入结果，否则追加
-            if (contentInput.value.trim() === '') {
-                contentInput.value = randomResult;
-            } else {
-                contentInput.value += `\n${randomResult}`;
+            // 找到第一个空的字段填入
+            const fields = ['last-week', 'this-week', 'blockers', 'risks', 'others'];
+            for (const fieldId of fields) {
+                const field = document.getElementById(fieldId);
+                if (field && field.value.trim() === '') {
+                    field.value = randomResult;
+                    break;
+                }
             }
             
-            // 更新字符计数
-            const charCount = document.getElementById('char-count');
-            charCount.textContent = `${contentInput.value.length}/500`;
-            
-            voiceStatus.textContent = '语音识别完成！可以继续编辑或直接提交。';
+            voiceStatus.textContent = '语音识别完成！';
             document.getElementById('voice-progress').classList.add('hidden');
             
-            // 停止录制状态
             this.isRecording = false;
             document.getElementById('voice-record-btn').classList.remove('active');
         }, 2000);
@@ -183,34 +132,32 @@ class MeetingInput {
     // 提交内容
     async submitContent() {
         const participantName = document.getElementById('participant-name').value.trim();
-        const meetingContent = document.getElementById('meeting-content').value.trim();
 
-        // 验证
+        // 验证姓名必填
         if (!participantName) {
             this.showNotification('请输入您的姓名', 'warning');
             document.getElementById('participant-name').focus();
             return;
         }
 
-        if (!meetingContent) {
-            this.showNotification('请输入会议内容', 'warning');
-            document.getElementById('meeting-content').focus();
-            return;
-        }
-
-        if (meetingContent.length > 500) {
-            this.showNotification('内容不能超过500个字符', 'error');
-            return;
-        }
-
-        // 准备数据
+        // 收集所有字段内容
         const contentData = {
             id: `CONTENT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
             participant: participantName,
-            content: meetingContent,
+            lastWeek: document.getElementById('last-week').value.trim(),
+            thisWeek: document.getElementById('this-week').value.trim(),
+            blockers: document.getElementById('blockers').value.trim(),
+            risks: document.getElementById('risks').value.trim(),
+            others: document.getElementById('others').value.trim(),
             timestamp: new Date().toISOString(),
             meetingId: this.meetingId
         };
+
+        // 检查是否至少填写了一项
+        if (!contentData.lastWeek && !contentData.thisWeek && !contentData.blockers && !contentData.risks && !contentData.others) {
+            this.showNotification('请至少填写一项汇报内容', 'warning');
+            return;
+        }
 
         // 显示提交中状态
         const submitBtn = document.getElementById('submit-btn');
@@ -223,23 +170,26 @@ class MeetingInput {
 
         // 同步到云端API
         try {
-            // 使用绝对路径访问API
             const apiUrl = new URL('/api/meeting', window.location.origin);
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     meetingId: this.meetingId,
-                    content: meetingContent,
-                    participant: participantName
+                    participant: participantName,
+                    lastWeek: contentData.lastWeek,
+                    thisWeek: contentData.thisWeek,
+                    blockers: contentData.blockers,
+                    risks: contentData.risks,
+                    others: contentData.others
                 })
             });
             const result = await response.json();
             if (!result.success) {
-                console.warn('云端同步失败，数据已保存在本地:', result.error);
+                console.warn('云端同步失败，数据已保存在本地');
             }
         } catch (error) {
-            console.warn('云端同步失败（网络问题），数据已保存在本地:', error);
+            console.warn('云端同步失败（网络问题），数据已保存在本地');
         }
 
         // 显示成功弹窗
@@ -247,8 +197,12 @@ class MeetingInput {
 
         // 清空表单
         setTimeout(() => {
-            document.getElementById('meeting-content').value = '';
-            document.getElementById('char-count').textContent = '0/500';
+            document.getElementById('participant-name').value = participantName; // 保留姓名
+            document.getElementById('last-week').value = '';
+            document.getElementById('this-week').value = '';
+            document.getElementById('blockers').value = '';
+            document.getElementById('risks').value = '';
+            document.getElementById('others').value = '';
             submitBtn.innerHTML = originalBtnText;
             submitBtn.disabled = false;
         }, 1000);
@@ -256,13 +210,11 @@ class MeetingInput {
 
     // 保存到localStorage
     saveContentToLocalStorage(contentData) {
-        // 保存内容
         const contentsKey = `meeting_${this.meetingId}_contents`;
         const existingContents = JSON.parse(localStorage.getItem(contentsKey) || '[]');
         existingContents.push(contentData);
         localStorage.setItem(contentsKey, JSON.stringify(existingContents));
         
-        // 保存参与者
         const participantsKey = `meeting_${this.meetingId}_participants`;
         const existingParticipants = JSON.parse(localStorage.getItem(participantsKey) || '[]');
         if (!existingParticipants.includes(contentData.participant)) {
@@ -283,7 +235,6 @@ class MeetingInput {
 
     // 显示通知
     showNotification(message, type = 'info') {
-        // 创建通知元素
         const notification = document.createElement('div');
         const iconMap = {
             success: 'fas fa-check-circle',
@@ -299,7 +250,7 @@ class MeetingInput {
             info: 'bg-blue-500'
         };
         
-        notification.className = `${colorMap[type]} text-white px-4 py-3 rounded-lg shadow-lg fixed top-4 right-4 z-50 transform transition-all duration-300 translate-x-full`;
+        notification.className = `${colorMap[type]} text-white px-4 py-3 rounded-lg shadow-lg fixed top-4 right-4 left-4 z-50 transform transition-all duration-300 translate-x-full`;
         notification.innerHTML = `
             <div class="flex items-center">
                 <i class="${iconMap[type]} mr-3"></i>
@@ -309,12 +260,10 @@ class MeetingInput {
         
         document.body.appendChild(notification);
         
-        // 显示动画
         setTimeout(() => {
             notification.classList.remove('translate-x-full');
         }, 100);
         
-        // 自动隐藏
         setTimeout(() => {
             notification.classList.add('translate-x-full');
             setTimeout(() => {
@@ -322,17 +271,6 @@ class MeetingInput {
             }, 300);
         }, 3000);
     }
-}
-
-// 全局函数：插入模板
-function insertTemplate(template) {
-    const contentInput = document.getElementById('meeting-content');
-    contentInput.value = template;
-    contentInput.focus();
-    
-    // 更新字符计数
-    const charCount = document.getElementById('char-count');
-    charCount.textContent = `${template.length}/500`;
 }
 
 // 初始化应用

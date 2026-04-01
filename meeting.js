@@ -128,20 +128,38 @@ class MeetingRoom {
         container.innerHTML = allContents.map(item => {
             const time = new Date(item.timestamp).toLocaleTimeString('zh-CN');
             const isHost = item.source === 'host';
-            const typeClass = item.type ? `bg-${this.getTypeColor(item.type)}-100 text-${this.getTypeColor(item.type)}-800` : 'bg-gray-100 text-gray-800';
+            
+            // 处理新的多字段格式
+            let contentHtml = '';
+            if (item.lastWeek) {
+                contentHtml += `<div class="mb-2"><span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded">上周关键结果</span><p class="text-gray-700 text-sm mt-1">${item.lastWeek}</p></div>`;
+            }
+            if (item.thisWeek) {
+                contentHtml += `<div class="mb-2"><span class="text-xs font-medium text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">本周重点事项</span><p class="text-gray-700 text-sm mt-1">${item.thisWeek}</p></div>`;
+            }
+            if (item.blockers) {
+                contentHtml += `<div class="mb-2"><span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">卡点 & 需要协调</span><p class="text-gray-700 text-sm mt-1">${item.blockers}</p></div>`;
+            }
+            if (item.risks) {
+                contentHtml += `<div class="mb-2"><span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded">风险 & 提醒</span><p class="text-gray-700 text-sm mt-1">${item.risks}</p></div>`;
+            }
+            if (item.others) {
+                contentHtml += `<div class="mb-2"><span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">其他</span><p class="text-gray-700 text-sm mt-1">${item.others}</p></div>`;
+            }
+            if (item.content && !contentHtml) {
+                // 兼容旧格式
+                contentHtml = `<p class="text-gray-700 text-sm">${item.content}</p>`;
+            }
             
             return `
                 <div class="p-3 rounded-lg ${isHost ? 'bg-purple-50 border-l-4 border-purple-500' : 'bg-gray-50 border-l-4 border-blue-500'}">
-                    <div class="flex justify-between items-start mb-1">
+                    <div class="flex justify-between items-start mb-2">
                         <span class="text-sm font-medium ${isHost ? 'text-purple-700' : 'text-blue-700'}">
                             ${isHost ? '主持人' : (item.participant || '匿名')}
                         </span>
-                        <div class="flex items-center gap-2">
-                            ${item.type ? `<span class="text-xs px-2 py-0.5 rounded ${typeClass}">${this.getTypeLabel(item.type)}</span>` : ''}
-                            <span class="text-xs text-gray-500">${time}</span>
-                        </div>
+                        <span class="text-xs text-gray-500">${time}</span>
                     </div>
-                    <p class="text-gray-700 text-sm">${item.content}</p>
+                    ${contentHtml}
                 </div>
             `;
         }).join('');
@@ -383,83 +401,131 @@ class MeetingRoom {
     }
     
     buildMinutesPrompt(contents) {
-        const formattedContents = contents.map((c, i) => 
-            `${i + 1}. [${c.participant || '未知'}] ${c.content} (${new Date(c.timestamp).toLocaleString('zh-CN')})`
-        ).join('\n');
+        const participants = [...new Set(contents.map(c => c.participant).filter(Boolean))];
+        const phoneContents = contents.filter(c => c.source !== 'host');
         
-        return `请根据以下会议内容生成一份专业的会议纪要：
+        let prompt = `请根据以下会议内容生成一份专业的会议纪要：
 
 【会议信息】
 - 会议编号：${this.meetingId}
 - 会议时间：${new Date().toLocaleString('zh-CN')}
+- 参会人数：${participants.length}人
 
 【参会人员】
-${[...new Set(contents.map(c => c.participant).filter(Boolean))].join('、') || '未记录'}
+${participants.join('、') || '未记录'}
 
-【会议内容】
-${formattedContents}
+`;
 
-请生成包含以下部分的会议纪要：
+        // 按人员整理内容
+        phoneContents.forEach((c, i) => {
+            prompt += `【${c.participant}的汇报】\n`;
+            if (c.lastWeek) prompt += `- 上周关键结果：${c.lastWeek}\n`;
+            if (c.thisWeek) prompt += `- 本周重点事项：${c.thisWeek}\n`;
+            if (c.blockers) prompt += `- 卡点 & 需要协调：${c.blockers}\n`;
+            if (c.risks) prompt += `- 风险 & 提醒：${c.risks}\n`;
+            if (c.others) prompt += `- 其他：${c.others}\n`;
+            prompt += '\n';
+        });
+
+        prompt += `请生成包含以下部分的会议纪要：
 1. 会议概述
-2. 讨论内容摘要
-3. 决议事项
-4. 行动项（包含负责人和截止时间）
-5. 下次会议安排（如有）
-6. 备注`;
+2. 上周关键结果汇总
+3. 本周重点事项汇总
+4. 卡点 & 需要协调事项
+5. 风险 & 提醒
+6. 行动项（包含负责人和截止时间）
+7. 备注`;
+
+        return prompt;
     }
     
     generateMinutesTemplate(contents) {
         const participants = [...new Set(contents.map(c => c.participant).filter(Boolean))];
-        const resolutions = contents.filter(c => c.type === 'resolution');
-        const actions = contents.filter(c => c.type === 'action');
-        const discussions = contents.filter(c => c.type === 'discussion' || (!c.type));
+        const phoneContents = contents.filter(c => c.source !== 'host');
+        const hostContents = contents.filter(c => c.source === 'host');
+        
+        // 汇总各类内容
+        const allLastWeeks = phoneContents.map(c => c.lastWeek).filter(Boolean);
+        const allThisWeeks = phoneContents.map(c => c.thisWeek).filter(Boolean);
+        const allBlockers = phoneContents.map(c => c.blockers).filter(Boolean);
+        const allRisks = phoneContents.map(c => c.risks).filter(Boolean);
+        const allOthers = phoneContents.map(c => c.others).filter(Boolean);
         
         let minutes = `# 会议纪要
 
 ## 会议信息
 - **会议编号**: ${this.meetingId}
 - **会议时间**: ${new Date().toLocaleString('zh-CN')}
-- **记录人**: 主持人
+- **参会人数**: ${participants.length}人
 
 ## 参会人员
 ${participants.length > 0 ? participants.map(p => `- ${p}`).join('\n') : '- 未记录'}
 
-## 会议内容
-
 `;
 
-        if (discussions.length > 0) {
-            minutes += `### 讨论内容
+        // 上周关键结果
+        if (allLastWeeks.length > 0) {
+            minutes += `## 上周关键结果
 `;
-            discussions.forEach((d, i) => {
-                minutes += `${i + 1}. ${d.content}\n   - 发言人: ${d.participant || '未知'}\n`;
+            phoneContents.filter(c => c.lastWeek).forEach(c => {
+                minutes += `- **${c.participant}**: ${c.lastWeek}\n`;
             });
             minutes += '\n';
         }
         
-        if (resolutions.length > 0) {
-            minutes += `### 决议事项
+        // 本周重点事项
+        if (allThisWeeks.length > 0) {
+            minutes += `## 本周重点事项
 `;
-            resolutions.forEach((r, i) => {
-                minutes += `${i + 1}. ${r.content.replace(/^决议[：:]/, '')}\n`;
+            phoneContents.filter(c => c.thisWeek).forEach(c => {
+                minutes += `- **${c.participant}**: ${c.thisWeek}\n`;
             });
             minutes += '\n';
         }
         
-        if (actions.length > 0) {
-            minutes += `### 行动项
+        // 卡点 & 需要协调
+        if (allBlockers.length > 0) {
+            minutes += `## 卡点 & 需要协调
 `;
-            actions.forEach((a, i) => {
-                const assignee = a.content.match(/负责人[：:]\s*(\S+)/)?.[1] || '待分配';
-                minutes += `${i + 1}. ${a.content.replace(/^行动项[：:]/, '').split('\n')[0]}\n   - 负责人: ${assignee}\n   - 截止日期: 待定\n`;
+            phoneContents.filter(c => c.blockers).forEach(c => {
+                minutes += `- **${c.participant}**: ${c.blockers}\n`;
             });
             minutes += '\n';
         }
         
-        minutes += `## 备注
-- 会议共收到 ${contents.length} 条内容
-- 手机提交: ${contents.filter(c => c.source !== 'host').length} 条
-- 主持人记录: ${contents.filter(c => c.source === 'host').length} 条
+        // 风险 & 提醒
+        if (allRisks.length > 0) {
+            minutes += `## 风险 & 提醒
+`;
+            phoneContents.filter(c => c.risks).forEach(c => {
+                minutes += `- **${c.participant}**: ${c.risks}\n`;
+            });
+            minutes += '\n';
+        }
+        
+        // 其他
+        if (allOthers.length > 0) {
+            minutes += `## 其他事项
+`;
+            phoneContents.filter(c => c.others).forEach(c => {
+                minutes += `- **${c.participant}**: ${c.others}\n`;
+            });
+            minutes += '\n';
+        }
+        
+        // 主持人记录
+        if (hostContents.length > 0) {
+            minutes += `## 主持人记录
+`;
+            hostContents.forEach((h, i) => {
+                minutes += `${i + 1}. ${h.content}\n`;
+            });
+            minutes += '\n';
+        }
+        
+        minutes += `## 统计信息
+- 参会人员提交: ${phoneContents.length} 条
+- 主持人记录: ${hostContents.length} 条
 
 ---
 *本纪要由智能会议助手自动生成*
