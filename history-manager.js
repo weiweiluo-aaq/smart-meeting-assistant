@@ -193,6 +193,7 @@ class HistoryManager {
                                 <div class="flex items-center gap-2">
                                     <h4 class="font-semibold text-gray-800">${meeting.id}</h4>
                                     ${priority ? `<span class="priority-badge priority-${priority}">${priority === 'high' ? '高优先级' : priority === 'medium' ? '中优先级' : '低优先级'}</span>` : ''}
+                                    <span class="text-xs ${meeting.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} px-2 py-0.5 rounded-full">${meeting.status === 'completed' ? '已结束' : '进行中'}</span>
                                 </div>
                                 <p class="text-sm text-gray-500">${date.toLocaleString('zh-CN')}</p>
                             </div>
@@ -202,6 +203,9 @@ class HistoryManager {
                                 </button>
                                 <button onclick="viewMeetingDetails('${meeting.id}')" class="text-gray-400 hover:text-blue-600">
                                     <i class="fas fa-external-link-alt"></i>
+                                </button>
+                                <button onclick="deleteMeeting('${meeting.id}')" class="text-gray-400 hover:text-red-600">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
@@ -478,6 +482,29 @@ function viewMeetingDetails(meetingId) {
 
 function closeMeetingModal() {
     document.getElementById('meeting-modal').classList.add('hidden');
+}
+
+function deleteMeeting(meetingId) {
+    if (confirm('确定要删除这个会议记录吗？此操作不可恢复。')) {
+        // 从localStorage中移除
+        const meetings = JSON.parse(localStorage.getItem('meetingsHistory') || '[]');
+        const updatedMeetings = meetings.filter(m => m.id !== meetingId);
+        localStorage.setItem('meetingsHistory', JSON.stringify(updatedMeetings));
+        
+        // 重新加载
+        historyManager.loadMeetings();
+        
+        // 显示通知
+        const notification = document.createElement('div');
+        notification.className = 'bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg fixed top-4 right-4 z-50 transform transition-all duration-300';
+        notification.innerHTML = '<div class="flex items-center"><i class="fas fa-check-circle mr-3"></i><span>会议记录已删除</span></div>';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.classList.add('translate-x-full'), 100);
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
 }
 
 // 初始化
