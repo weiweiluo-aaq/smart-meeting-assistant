@@ -63,6 +63,22 @@ class AdvancedAIAnalyzer {
         };
     }
 
+    // 获取内容的文本（兼容新旧格式）
+    getContentText(content) {
+        // 新格式：多字段
+        if (content.lastWeek || content.thisWeek || content.blockers || content.risks || content.others) {
+            return [
+                content.lastWeek || '',
+                content.thisWeek || '',
+                content.blockers || '',
+                content.risks || '',
+                content.others || ''
+            ].join(' ');
+        }
+        // 旧格式：单个content字段
+        return content.content || '';
+    }
+
     // 主题分类
     topicClassification(contents) {
         const categoryKeywords = {
@@ -78,11 +94,12 @@ class AdvancedAIAnalyzer {
         const classifiedContents = [];
 
         contents.forEach(content => {
+            const text = this.getContentText(content);
             let assignedCategory = '其他';
             let maxMatches = 0;
 
             Object.entries(categoryKeywords).forEach(([category, keywords]) => {
-                const matches = keywords.filter(keyword => content.content.includes(keyword)).length;
+                const matches = keywords.filter(keyword => text.includes(keyword)).length;
                 if (matches > maxMatches) {
                     maxMatches = matches;
                     assignedCategory = category;
@@ -120,15 +137,16 @@ class AdvancedAIAnalyzer {
         let neutralCount = 0;
 
         const sentimentResults = contents.map(content => {
+            const text = this.getContentText(content);
             let positiveMatches = 0;
             let negativeMatches = 0;
 
             positiveKeywords.forEach(keyword => {
-                if (content.content.includes(keyword)) positiveMatches++;
+                if (text.includes(keyword)) positiveMatches++;
             });
 
             negativeKeywords.forEach(keyword => {
-                if (content.content.includes(keyword)) negativeMatches++;
+                if (text.includes(keyword)) negativeMatches++;
             });
 
             let sentiment;
@@ -185,31 +203,33 @@ class AdvancedAIAnalyzer {
         const actionItems = [];
 
         contents.forEach(content => {
+            const text = this.getContentText(content);
+            
             actionItemPatterns.forEach(pattern => {
-                const matches = content.content.match(pattern.regex);
+                const matches = text.match(pattern.regex);
                 if (matches && matches.length > 1) {
                     actionItems.push({
                         id: `ACTION-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
                         description: matches[0].trim(),
                         detail: matches[1].trim(),
                         type: pattern.type,
-                        source: content.content,
+                        source: text,
                         participant: content.participant,
-                        priority: this.inferPriority(content.content),
-                        deadline: this.inferDeadline(content.content)
+                        priority: this.inferPriority(text),
+                        deadline: this.inferDeadline(text)
                     });
                 }
             });
 
             // 检查是否有明确的负责人
-            if (content.content.includes('负责') || content.content.includes('由谁')) {
+            if (text.includes('负责') || text.includes('由谁')) {
                 actionItems.push({
                     id: `ACTION-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-                    description: content.content,
+                    description: text,
                     type: 'responsibility',
-                    source: content.content,
+                    source: text,
                     participant: content.participant,
-                    priority: this.inferPriority(content.content),
+                    priority: this.inferPriority(text),
                     needAssignment: true
                 });
             }
@@ -267,9 +287,10 @@ class AdvancedAIAnalyzer {
     // 优先级评估
     priorityAssessment(contents) {
         const priorityAssessments = contents.map(content => {
-            const priority = this.inferPriority(content.content);
-            const impact = this.assessImpact(content.content);
-            const effort = this.assessEffort(content.content);
+            const text = this.getContentText(content);
+            const priority = this.inferPriority(text);
+            const impact = this.assessImpact(text);
+            const effort = this.assessEffort(text);
             
             return {
                 content: content,
@@ -353,7 +374,8 @@ class AdvancedAIAnalyzer {
         const dependencyRegex = /依赖(.*?)|取决于(.*?)|需要(.*?)完成/;
         
         contents.forEach((content, index) => {
-            const matches = content.content.match(dependencyRegex);
+            const text = this.getContentText(content);
+            const matches = text.match(dependencyRegex);
             if (matches) {
                 dependencies.push({
                     fromContent: content.id,
@@ -373,9 +395,11 @@ class AdvancedAIAnalyzer {
             for (let j = i + 1; j < contents.length; j++) {
                 const content1 = contents[i];
                 const content2 = contents[j];
+                const text1 = this.getContentText(content1);
+                const text2 = this.getContentText(content2);
                 
-                const hasPositive = positiveWords.some(word => content1.content.includes(word));
-                const hasNegative = negativeWords.some(word => content2.content.includes(word));
+                const hasPositive = positiveWords.some(word => text1.includes(word));
+                const hasNegative = negativeWords.some(word => text2.includes(word));
                 
                 if (hasPositive && hasNegative && this.areRelatedContents(content1, content2)) {
                     conflicts.push({
@@ -398,15 +422,18 @@ class AdvancedAIAnalyzer {
     findRelatedContent(contents, keyword) {
         if (!keyword) return null;
         
-        return contents.find(content => 
-            content.content.includes(keyword.trim()) && content.content.length > keyword.length
-        )?.id || null;
+        return contents.find(content => {
+            const text = this.getContentText(content);
+            return text.includes(keyword.trim()) && text.length > keyword.length;
+        })?.id || null;
     }
 
     // 判断内容是否相关
     areRelatedContents(content1, content2) {
-        const words1 = content1.content.split(/\s+/).filter(word => word.length > 2);
-        const words2 = content2.content.split(/\s+/).filter(word => word.length > 2);
+        const text1 = this.getContentText(content1);
+        const text2 = this.getContentText(content2);
+        const words1 = text1.split(/\s+/).filter(word => word.length > 2);
+        const words2 = text2.split(/\s+/).filter(word => word.length > 2);
         
         const commonWords = words1.filter(word => words2.includes(word));
         return commonWords.length > 0;
@@ -438,8 +465,9 @@ class AdvancedAIAnalyzer {
         const highPriorityItems = priorityResult.filter(item => item.shouldDiscuss);
         
         return highPriorityItems.map(item => {
+            const text = this.getContentText(item.content);
             const priorityIcon = item.priority === 'high' ? '🔴' : item.priority === 'medium' ? '🟡' : '🟢';
-            return `${priorityIcon} ${item.content.content} (来自: ${item.content.participant})`;
+            return `${priorityIcon} ${text.substring(0, 50)}${text.length > 50 ? '...' : ''} (来自: ${item.content.participant || '未知'})`;
         });
     }
 
