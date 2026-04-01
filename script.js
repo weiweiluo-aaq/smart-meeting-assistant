@@ -196,16 +196,19 @@ class MeetingAssistant {
 
             if (result.success && result.data) {
                 // 保存到本地存储（同步到本地）
-                if (result.data.contents && result.data.contents.length > 0) {
-                    localStorage.setItem(`meeting_${this.meetingId}_contents`, JSON.stringify(result.data.contents));
+                if (result.data.contents !== undefined) {
+                    localStorage.setItem(`meeting_${this.meetingId}_contents`, JSON.stringify(result.data.contents || []));
                 }
-                if (result.data.participants && result.data.participants.length > 0) {
-                    localStorage.setItem(`meeting_${this.meetingId}_participants`, JSON.stringify(result.data.participants));
+                if (result.data.participants !== undefined) {
+                    localStorage.setItem(`meeting_${this.meetingId}_participants`, JSON.stringify(result.data.participants || []));
                 }
 
                 // 直接更新统计显示
                 document.getElementById('participant-count').textContent = result.data.participants?.length || 0;
                 document.getElementById('content-count').textContent = result.data.contents?.length || 0;
+
+                // 更新当前实例的contents数组
+                this.contents = result.data.contents || [];
 
                 if (!silent) {
                     this.showNotification(`刷新成功！${result.data.participants?.length || 0} 人提交了 ${result.data.contents?.length || 0} 条内容`, 'success');
