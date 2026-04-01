@@ -115,6 +115,11 @@ class MeetingAssistant {
             this.showTodos();
         });
 
+        // 刷新数据按钮
+        document.getElementById('refresh-data-btn').addEventListener('click', () => {
+            this.refreshDataFromAPI();
+        });
+
         // 实时监听数据变化
         this.setupRealtimeListener();
     }
@@ -130,9 +135,42 @@ class MeetingAssistant {
     updateStats() {
         const storedContents = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_contents`) || '[]');
         const storedParticipants = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_participants`) || '[]');
-        
+
         document.getElementById('participant-count').textContent = storedParticipants.length;
         document.getElementById('content-count').textContent = storedContents.length;
+    }
+
+    // 从 API 刷新数据
+    async refreshDataFromAPI() {
+        try {
+            const refreshBtn = document.getElementById('refresh-data-btn');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<span class="loading-spinner mr-2"></span>刷新中...';
+            refreshBtn.disabled = true;
+
+            const response = await fetch(`/api?meetingId=${this.meetingId}`);
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                // 保存到本地存储
+                localStorage.setItem(`meeting_${this.meetingId}_contents`, JSON.stringify(result.data.contents));
+                localStorage.setItem(`meeting_${this.meetingId}_participants`, JSON.stringify(result.data.participants));
+
+                // 更新统计
+                this.updateStats();
+
+                this.showNotification(`刷新成功！${result.data.participants.length} 人提交了 ${result.data.contents.length} 条内容`, 'success');
+            } else {
+                throw new Error(result.error || '刷新失败');
+            }
+        } catch (error) {
+            console.error('刷新数据失败:', error);
+            this.showNotification('刷新失败，请检查网络或 API 配置', 'error');
+        } finally {
+            const refreshBtn = document.getElementById('refresh-data-btn');
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>刷新数据';
+            refreshBtn.disabled = false;
+        }
     }
 
     // 开始会议
