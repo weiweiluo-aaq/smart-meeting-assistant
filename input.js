@@ -223,9 +223,9 @@ class MeetingInput {
 
         // 同步到云端API
         try {
-        // 使用绝对路径访问API
-        const apiUrl = new URL('/api/meeting', window.location.origin);
-        const response = await fetch(apiUrl, {
+            // 使用绝对路径访问API
+            const apiUrl = new URL('/api/meeting', window.location.origin);
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
