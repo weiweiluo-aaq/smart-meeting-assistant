@@ -41,10 +41,14 @@ class MeetingAssistant {
         // 清空二维码容器
         const qrcodeContainer = document.getElementById('qrcode');
         qrcodeContainer.innerHTML = '';
-        
+
+        // 创建canvas元素
+        const canvas = document.createElement('canvas');
+        qrcodeContainer.appendChild(canvas);
+
         // 尝试使用QRCode.js生成二维码
         try {
-            QRCode.toCanvas(qrcodeContainer, meetingUrl, {
+            QRCode.toCanvas(canvas, meetingUrl, {
                 width: 200,
                 color: {
                     dark: '#165DFF',
@@ -737,4 +741,6 @@ function markTodoCompleted(todoId) {
 }
 
 // 初始化应用
-const assistant = new MeetingAssistant();
+window.addEventListener('DOMContentLoaded', () => {
+    const assistant = new MeetingAssistant();
+});

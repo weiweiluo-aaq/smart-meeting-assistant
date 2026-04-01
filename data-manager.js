@@ -433,4 +433,5 @@ if (typeof window !== 'undefined') {
     }, 24 * 60 * 60 * 1000); // 每天检查一次
 }
 
-export default MeetingDataManager;
+// 暴露为全局变量
+window.MeetingDataManager = MeetingDataManager;
