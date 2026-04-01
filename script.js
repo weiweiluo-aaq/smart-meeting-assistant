@@ -123,8 +123,8 @@ class MeetingAssistant {
         // });
 
         // 刷新数据按钮
-        document.getElementById('refresh-data-btn').addEventListener('click', () => {
-            this.refreshDataFromAPI();
+        document.getElementById('refresh-data-btn').addEventListener('click', async () => {
+            await this.refreshDataFromAPI();
         });
 
         // 实时监听数据变化
