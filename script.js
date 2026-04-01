@@ -16,6 +16,9 @@ class MeetingAssistant {
         this.generateQRCode();
         this.updateStats();
         this.loadHistory();
+
+        // 启动定时自动刷新（每5秒刷新一次）
+        this.startAutoRefresh();
     }
 
     // 生成唯一会议ID
@@ -126,9 +129,16 @@ class MeetingAssistant {
 
     // 实时数据监听
     setupRealtimeListener() {
-        setInterval(() => {
+        // 每5秒自动刷新统计数据
+        this.autoRefreshInterval = setInterval(() => {
             this.updateStats();
-        }, 2000);
+        }, 5000);
+    }
+
+    // 启动定时自动刷新
+    startAutoRefresh() {
+        this.setupRealtimeListener();
+        console.log('自动刷新已启动，每5秒更新一次');
     }
 
     // 更新统计信息

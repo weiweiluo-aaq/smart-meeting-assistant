@@ -181,28 +181,28 @@ class MeetingInput {
     }
 
     // 提交内容
-    async submitContent() {
+    submitContent() {
         const participantName = document.getElementById('participant-name').value.trim();
         const meetingContent = document.getElementById('meeting-content').value.trim();
-        
+
         // 验证
         if (!participantName) {
             this.showNotification('请输入您的姓名', 'warning');
             document.getElementById('participant-name').focus();
             return;
         }
-        
+
         if (!meetingContent) {
             this.showNotification('请输入会议内容', 'warning');
             document.getElementById('meeting-content').focus();
             return;
         }
-        
+
         if (meetingContent.length > 500) {
             this.showNotification('内容不能超过500个字符', 'error');
             return;
         }
-        
+
         // 准备数据
         const contentData = {
             id: `CONTENT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
@@ -211,39 +211,13 @@ class MeetingInput {
             timestamp: new Date().toISOString(),
             meetingId: this.meetingId
         };
-        
-        // 尝试提交到 API
-        try {
-            const response = await fetch('/api', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    meetingId: this.meetingId,
-                    content: meetingContent,
-                    participant: participantName
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showNotification('提交成功！主持人可以查看', 'success');
-            } else {
-                throw new Error(result.error || '提交失败');
-            }
-        } catch (error) {
-            console.error('API 提交失败，降级到本地存储:', error);
-            // 如果 API 失败，降级到本地存储
-            this.saveContentToLocalStorage(contentData);
-            this.showNotification('已保存到本地（网络异常）', 'warning');
-        }
-        
-        // 保存到localStorage（作为备份）
+
+        // 保存到localStorage
         this.saveContentToLocalStorage(contentData);
-        
+
         // 显示成功弹窗
         this.showSuccessModal();
-        
+
         // 清空表单
         setTimeout(() => {
             document.getElementById('meeting-content').value = '';
