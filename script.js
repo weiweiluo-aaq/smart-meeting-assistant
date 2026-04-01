@@ -8,13 +8,13 @@ class MeetingAssistant {
         this.meetingsHistory = JSON.parse(localStorage.getItem('meetingsHistory') || '[]');
         this.todos = JSON.parse(localStorage.getItem('meetingTodos') || '[]');
         
-        this.init();
+        // init() 现在是异步的，不在构造函数里调用，而是在外部调用
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
         this.generateQRCode();
-        this.updateStats();
+        await this.updateStats();
         this.loadHistory();
 
         // 启动定时自动刷新（每5秒刷新一次）
@@ -103,8 +103,8 @@ class MeetingAssistant {
         });
 
         // 开始会议
-        document.getElementById('start-meeting-btn').addEventListener('click', () => {
-            this.startMeeting();
+        document.getElementById('start-meeting-btn').addEventListener('click', async () => {
+            await this.startMeeting();
         });
 
         // 分析会议内容
@@ -134,8 +134,8 @@ class MeetingAssistant {
     // 实时数据监听
     setupRealtimeListener() {
         // 每5秒从云端API刷新统计数据
-        this.autoRefreshInterval = setInterval(() => {
-            this.refreshDataFromAPI(true); // true = 静默刷新，不弹通知
+        this.autoRefreshInterval = setInterval(async () => {
+            await this.updateStats();
         }, 5000);
     }
 
@@ -146,7 +146,11 @@ class MeetingAssistant {
     }
 
     // 更新统计信息
-    updateStats() {
+    async updateStats() {
+        // 从 API 刷新数据
+        await this.refreshDataFromAPI(true); // true = 静默刷新，不弹通知
+
+        // 从 localStorage 读取最新数据
         const storedContents = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_contents`) || '[]');
         const storedParticipants = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_participants`) || '[]');
 
@@ -179,7 +183,7 @@ class MeetingAssistant {
                 }
 
                 // 更新统计
-                this.updateStats();
+                await this.updateStats();
 
                 if (!silent) {
                     this.showNotification(`刷新成功！${result.data.participants?.length || 0} 人提交了 ${result.data.contents?.length || 0} 条内容`, 'success');
@@ -200,12 +204,12 @@ class MeetingAssistant {
     }
 
     // 开始会议
-    startMeeting() {
+    async startMeeting() {
         // 清除当前会议数据
         localStorage.removeItem(`meeting_${this.meetingId}_contents`);
         localStorage.removeItem(`meeting_${this.meetingId}_participants`);
         
-        this.updateStats();
+        await this.updateStats();
         this.showNotification('会议已开始，请大家扫码输入内容', 'success');
         
         // 生成新的二维码
@@ -741,6 +745,7 @@ function markTodoCompleted(todoId) {
 }
 
 // 初始化应用
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const assistant = new MeetingAssistant();
+    await assistant.init();
 });
