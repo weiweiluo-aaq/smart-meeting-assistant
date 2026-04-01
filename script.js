@@ -138,10 +138,10 @@ class MeetingAssistant {
             clearInterval(this.autoRefreshInterval);
         }
         
-        // 每5秒从云端API刷新统计数据
+        // 每3秒从云端API刷新统计数据（加快刷新频率）
         this.autoRefreshInterval = setInterval(async () => {
-            await this.updateStats();
-        }, 5000);
+            await this.refreshDataFromAPI(true);
+        }, 3000);
     }
 
     // 停止自动刷新
@@ -178,9 +178,9 @@ class MeetingAssistant {
             const apiUrl = new URL('/api/meeting', window.location.origin);
             apiUrl.searchParams.set('meetingId', this.meetingId);
             
-            // 添加超时处理（10秒）
+            // 添加超时处理（5秒）
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             
             const response = await fetch(apiUrl, { signal: controller.signal });
             clearTimeout(timeoutId); // 清除超时定时器
