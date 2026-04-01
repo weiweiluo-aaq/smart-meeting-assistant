@@ -133,10 +133,24 @@ class MeetingAssistant {
 
     // 实时数据监听
     setupRealtimeListener() {
+        // 先清除已存在的定时器
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+        
         // 每5秒从云端API刷新统计数据
         this.autoRefreshInterval = setInterval(async () => {
             await this.updateStats();
         }, 5000);
+    }
+
+    // 停止自动刷新
+    stopAutoRefresh() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+            this.autoRefreshInterval = null;
+            console.log('自动刷新已停止');
+        }
     }
 
     // 启动定时自动刷新
@@ -182,8 +196,9 @@ class MeetingAssistant {
                     localStorage.setItem(`meeting_${this.meetingId}_participants`, JSON.stringify(result.data.participants));
                 }
 
-                // 更新统计
-                await this.updateStats();
+                // 直接更新统计显示
+                document.getElementById('participant-count').textContent = result.data.participants?.length || 0;
+                document.getElementById('content-count').textContent = result.data.contents?.length || 0;
 
                 if (!silent) {
                     this.showNotification(`刷新成功！${result.data.participants?.length || 0} 人提交了 ${result.data.contents?.length || 0} 条内容`, 'success');

@@ -181,7 +181,7 @@ class MeetingInput {
     }
 
     // 提交内容
-    submitContent() {
+    async submitContent() {
         const participantName = document.getElementById('participant-name').value.trim();
         const meetingContent = document.getElementById('meeting-content').value.trim();
 
