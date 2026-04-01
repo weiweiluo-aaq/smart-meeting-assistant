@@ -1,19 +1,7 @@
 /**
  * Cloudflare Pages Function
- * 用于会议数据的读写操作
+ * 用于会议数据的读写操作和AI代理
  */
-
-// 处理 CORS 预检请求
-export async function onRequestOptions() {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400',
-    }
-  });
-}
 
 const corsHeaders = {
   'Content-Type': 'application/json',
@@ -24,11 +12,43 @@ const corsHeaders = {
   'Surrogate-Control': 'no-store',
 };
 
+// 处理 CORS 预检请求
+export async function onRequestOptions({ request }) {
+  const url = new URL(request.url);
+  
+  // 如果是 AI 代理请求，添加额外头
+  if (url.pathname.includes('/ai-proxy')) {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400',
+      }
+    });
+  }
+  
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    }
+  });
+}
+
 export async function onRequestGet(context) {
   const { request, env } = context;
+  const url = new URL(request.url);
 
+  // AI 代理请求
+  if (url.pathname.includes('/ai-proxy')) {
+    return handleAIProxy(request, env);
+  }
+
+  // 会议数据请求
   try {
-    const url = new URL(request.url);
     const meetingId = url.searchParams.get('meetingId');
 
     if (!meetingId) {
@@ -56,7 +76,14 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  const url = new URL(request.url);
 
+  // AI 代理请求
+  if (url.pathname.includes('/ai-proxy')) {
+    return handleAIProxy(request, env);
+  }
+
+  // 会议数据请求
   try {
     const body = await request.json();
     const { meetingId, participant, lastWeek, thisWeek, blockers, risks, others } = body;
@@ -108,6 +135,60 @@ export async function onRequestPost(context) {
     console.error('保存数据失败:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
+
+// AI 代理处理函数
+async function handleAIProxy(request, env) {
+  try {
+    const body = await request.json();
+    const { url, key, model, messages, temperature, max_tokens } = body;
+
+    console.log('AI代理收到请求:', { url, model, hasKey: !!key });
+
+    if (!url || !key || !model || !messages) {
+      return new Response(
+        JSON.stringify({ error: '缺少必要参数: url, key, model, messages' }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // 调用实际的 AI API
+    const apiResponse = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        temperature: temperature || 0.7,
+        max_tokens: max_tokens || 2000
+      })
+    });
+
+    console.log('AI API响应状态:', apiResponse.status);
+
+    // 获取响应数据
+    const responseData = await apiResponse.json();
+    console.log('AI API响应:', JSON.stringify(responseData).substring(0, 500));
+
+    // 返回给前端
+    return new Response(
+      JSON.stringify(responseData),
+      { 
+        status: apiResponse.status,
+        headers: corsHeaders 
+      }
+    );
+
+  } catch (error) {
+    console.error('AI 代理请求失败:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
       { status: 500, headers: corsHeaders }
     );
   }
