@@ -112,15 +112,15 @@ class MeetingAssistant {
             this.analyzeMeeting();
         });
 
-        // 查看历史会议
-        document.getElementById('history-btn').addEventListener('click', () => {
-            this.showHistory();
-        });
+        // 查看历史会议（直接通过a标签跳转）
+        // document.getElementById('history-btn').addEventListener('click', () => {
+        //     this.showHistory();
+        // });
 
-        // 待办事项回顾
-        document.getElementById('todos-btn').addEventListener('click', () => {
-            this.showTodos();
-        });
+        // 待办事项回顾（直接通过a标签跳转）
+        // document.getElementById('todos-btn').addEventListener('click', () => {
+        //     this.showTodos();
+        // });
 
         // 刷新数据按钮
         document.getElementById('refresh-data-btn').addEventListener('click', () => {
