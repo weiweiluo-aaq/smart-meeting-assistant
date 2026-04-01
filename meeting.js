@@ -288,7 +288,7 @@ class MeetingRoom {
         analyzeBtn.disabled = true;
         
         // 显示分析区域（带加载动画）
-        const section = document.getElementById('analysis-section');
+        const modal = document.getElementById('analysis-modal');
         const container = document.getElementById('analysis-content');
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12">
@@ -297,8 +297,7 @@ class MeetingRoom {
                 <p class="text-sm text-gray-400">预计需要 5-15 秒</p>
             </div>
         `;
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth' });
+        modal.classList.remove('hidden');
         
         try {
             // 获取API配置
@@ -470,15 +469,14 @@ class MeetingRoom {
     
     // 显示AI分析结果
     showAIAnalysisResult(analysisText) {
-        const section = document.getElementById('analysis-section');
+        const modal = document.getElementById('analysis-modal');
         const container = document.getElementById('analysis-content');
         
         // 将Markdown转换为HTML（简单处理）
         const htmlContent = this.markdownToHtml(analysisText);
         
         container.innerHTML = `<div class="prose max-w-none">${htmlContent}</div>`;
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth' });
+        modal.classList.remove('hidden');
     }
     
     // 简单的Markdown转HTML
@@ -493,7 +491,7 @@ class MeetingRoom {
     }
     
     showAnalysisResult(result) {
-        const section = document.getElementById('analysis-section');
+        const modal = document.getElementById('analysis-modal');
         const container = document.getElementById('analysis-content');
         
         const priorityStyles = {
@@ -558,12 +556,11 @@ class MeetingRoom {
             ` : ''}
         `;
         
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth' });
+        modal.classList.remove('hidden');
     }
     
     closeAnalysis() {
-        document.getElementById('analysis-section').classList.add('hidden');
+        document.getElementById('analysis-modal').classList.add('hidden');
     }
     
     async generateMinutes() {
@@ -580,7 +577,7 @@ class MeetingRoom {
         btn.disabled = true;
         
         // 显示纪要区域（带加载动画）
-        const section = document.getElementById('minutes-section');
+        const modal = document.getElementById('minutes-modal');
         const container = document.getElementById('minutes-content');
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12">
@@ -589,8 +586,7 @@ class MeetingRoom {
                 <p class="text-sm text-gray-400">预计需要 5-10 秒</p>
             </div>
         `;
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth' });
+        modal.classList.remove('hidden');
         
         try {
             const apiSettings = JSON.parse(localStorage.getItem('apiSettings') || '{}');
@@ -810,14 +806,13 @@ ${participants.length > 0 ? participants.map(p => `- ${p}`).join('\n') : '- 未�
     }
     
     showMinutes() {
-        const section = document.getElementById('minutes-section');
+        const modal = document.getElementById('minutes-modal');
         const container = document.getElementById('minutes-content');
         
         const html = this.markdownToHtml(this.currentMinutes);
         container.innerHTML = `<div class="prose max-w-none">${html}</div>`;
         
-        section.classList.remove('hidden');
-        section.scrollIntoView({ behavior: 'smooth' });
+        modal.classList.remove('hidden');
     }
     
     markdownToHtml(md) {
@@ -832,7 +827,7 @@ ${participants.length > 0 ? participants.map(p => `- ${p}`).join('\n') : '- 未�
     }
     
     closeMinutes() {
-        document.getElementById('minutes-section').classList.add('hidden');
+        document.getElementById('minutes-modal').classList.add('hidden');
     }
     
     copyMinutes() {

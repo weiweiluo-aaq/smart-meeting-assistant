@@ -161,44 +161,52 @@
                 </button>
             </div>
         </section>
+    </div>
 
-        <!-- 分析结果区域 -->
-        <section id="analysis-section" class="mt-6 bg-white rounded-2xl shadow-xl p-6 hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    <i class="fas fa-chart-pie text-purple-500 mr-2"></i>分析结果
+    <!-- AI分析结果悬浮面板（固定在屏幕中央） -->
+    <div id="analysis-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+            <!-- 头部 -->
+            <div class="flex justify-between items-center p-4 border-b bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-t-2xl">
+                <h2 class="text-lg font-semibold">
+                    <i class="fas fa-brain mr-2"></i>AI 会议分析结果
                 </h2>
-                <button onclick="closeAnalysis()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times"></i>
+                <button onclick="closeAnalysis()" class="hover:bg-white/20 rounded-full p-2 transition">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <div id="analysis-content" class="prose max-w-none">
+            <!-- 内容区 -->
+            <div id="analysis-content" class="flex-1 overflow-y-auto p-6">
                 <!-- 分析结果将在这里显示 -->
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- 会议纪要区域 -->
-        <section id="minutes-section" class="mt-6 bg-white rounded-2xl shadow-xl p-6 hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    <i class="fas fa-file-alt text-green-500 mr-2"></i>会议纪要
+    <!-- 会议纪要悬浮面板（固定在屏幕中央） -->
+    <div id="minutes-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col">
+            <!-- 头部 -->
+            <div class="flex justify-between items-center p-4 border-b bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-t-2xl">
+                <h2 class="text-lg font-semibold">
+                    <i class="fas fa-file-alt mr-2"></i>会议纪要
                 </h2>
                 <div class="flex gap-2">
-                    <button onclick="copyMinutes()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                    <button onclick="copyMinutes()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm transition">
                         <i class="fas fa-copy mr-1"></i>复制
                     </button>
-                    <button onclick="downloadMinutes()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                    <button onclick="downloadMinutes()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm transition">
                         <i class="fas fa-download mr-1"></i>下载
                     </button>
-                    <button onclick="closeMinutes()" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times"></i>
+                    <button onclick="closeMinutes()" class="hover:bg-white/20 rounded-full p-2 transition">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
             </div>
-            <div id="minutes-content" class="bg-gray-50 rounded-lg p-4 max-h-[50vh] overflow-y-auto">
+            <!-- 内容区 -->
+            <div id="minutes-content" class="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <!-- 会议纪要将在这里显示 -->
             </div>
-        </section>
+        </div>
     </div>
 
     <!-- 会议信息弹窗 -->
@@ -254,7 +262,7 @@
 
     <!-- QRCode库 - 使用多CDN备用 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="meeting.js?v=20260401b"></script>
+    <script src="meeting.js?v=20260401c"></script>
     <script src="ai-analyzer.js?v=20260401"></script>
     <script src="data-manager.js?v=20260401"></script>
     <!-- 备用QRCode库（延迟加载） -->
