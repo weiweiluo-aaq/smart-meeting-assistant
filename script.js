@@ -184,7 +184,14 @@ class MeetingAssistant {
             // 使用绝对路径访问API
             const apiUrl = new URL('/api/meeting', window.location.origin);
             apiUrl.searchParams.set('meetingId', this.meetingId);
-            const response = await fetch(apiUrl);
+            
+            // 添加超时处理（10秒）
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(apiUrl, { signal: controller.signal });
+            clearTimeout(timeoutId); // 清除超时定时器
+            
             const result = await response.json();
 
             if (result.success && result.data) {
@@ -209,7 +216,11 @@ class MeetingAssistant {
         } catch (error) {
             console.error('刷新数据失败:', error);
             if (!silent) {
-                this.showNotification('刷新失败，请检查网络或 API 配置', 'error');
+                if (error.name === 'AbortError') {
+                    this.showNotification('请求超时，请检查网络连接或稍后再试', 'error');
+                } else {
+                    this.showNotification('刷新失败，请检查网络或 API 配置', 'error');
+                }
             }
         } finally {
             const refreshBtn = document.getElementById('refresh-data-btn');
