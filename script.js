@@ -163,13 +163,6 @@ class MeetingAssistant {
     async updateStats() {
         // 从 API 刷新数据
         await this.refreshDataFromAPI(true); // true = 静默刷新，不弹通知
-
-        // 从 localStorage 读取最新数据
-        const storedContents = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_contents`) || '[]');
-        const storedParticipants = JSON.parse(localStorage.getItem(`meeting_${this.meetingId}_participants`) || '[]');
-
-        document.getElementById('participant-count').textContent = storedParticipants.length;
-        document.getElementById('content-count').textContent = storedContents.length;
     }
 
     // 从 API 刷新数据（silent=true时不弹通知）
