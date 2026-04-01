@@ -283,26 +283,12 @@ class MeetingRoom {
     async analyzeWithAI(contents, settings) {
         const prompt = this.buildAnalysisPrompt(contents);
         
-        // 确保URL格式正确
-        let apiBaseUrl = settings.url.replace(/\/$/, ''); // 移除末尾斜杠
-        const apiUrl = `${apiBaseUrl}/chat/completions`;
-        
         console.log('========== AI分析调试信息 ==========');
-        console.log('API基础URL:', settings.url);
-        console.log('处理后API URL:', apiUrl);
         console.log('API Model:', settings.model);
-        console.log('API Key长度:', settings.key ? settings.key.length : 0);
+        console.log('服务商:', settings.provider);
         
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${settings.key}`
-            },
-            body: JSON.stringify({
-                model: settings.model,
-                messages: [
-                    { role: 'system', content: `你是一个专业的会议分析助手。请根据会议内容进行分析总结。
+        // 构建消息
+        const systemPrompt = `你是一个专业的会议分析助手。请根据会议内容进行分析总结。
 
 请按以下格式输出（使用Markdown格式）：
 
@@ -319,30 +305,84 @@ class MeetingRoom {
 列出待推进的问题和任务，并标注状态（进行中/已完成/待开始）
 
 ## 💡 建议
-根据会议内容给出1-3条建议` },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 2000
-            })
-        });
-        
-        console.log('API响应状态:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API错误:', errorText);
-            throw new Error(`API请求失败 (${response.status}): ${errorText}`);
+根据会议内容给出1-3条建议`;
+
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+        ];
+
+        // 尝试使用代理API（解决CORS问题）
+        try {
+            const proxyUrl = '/api/ai-proxy';
+            console.log('使用代理API:', proxyUrl);
+            
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: `${settings.url}/chat/completions`,
+                    key: settings.key,
+                    model: settings.model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+            
+            console.log('代理API响应状态:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('代理API错误:', errorData);
+                throw new Error(errorData.error || `代理请求失败 (${response.status})`);
+            }
+            
+            const result = await response.json();
+            console.log('代理API响应结果:', result);
+            
+            if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+                throw new Error('API响应格式错误');
+            }
+            
+            return result.choices[0].message.content;
+            
+        } catch (proxyError) {
+            console.error('代理调用失败，尝试直连:', proxyError);
+            
+            // 备用：直接调用API（可能在本地测试时工作）
+            const directUrl = `${settings.url}/chat/completions`;
+            console.log('尝试直连API:', directUrl);
+            
+            const response = await fetch(directUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${settings.key}`
+                },
+                body: JSON.stringify({
+                    model: settings.model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('直连API错误:', errorText);
+                throw new Error(`API请求失败 (${response.status}): ${errorText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+                throw new Error('API响应格式错误');
+            }
+            
+            return result.choices[0].message.content;
         }
-        
-        const result = await response.json();
-        console.log('API响应结果:', result);
-        
-        if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-            throw new Error('API响应格式错误');
-        }
-        
-        return result.choices[0].message.content;
     }
     
     // 构建分析prompt
@@ -507,29 +547,62 @@ class MeetingRoom {
     async generateMinutesWithAI(contents, settings) {
         const prompt = this.buildMinutesPrompt(contents);
         
-        const response = await fetch(`${settings.url}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${settings.key}`
-            },
-            body: JSON.stringify({
-                model: settings.model,
-                messages: [
-                    { role: 'system', content: '你是一个专业的会议纪要助手，请根据提供的会议内容生成结构化的会议纪要。' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 0.7,
-                max_tokens: 2000
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API请求失败: ${response.status}`);
+        // 通过代理API调用（解决CORS问题）
+        try {
+            const response = await fetch('/api/ai-proxy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: `${settings.url}/chat/completions`,
+                    key: settings.key,
+                    model: settings.model,
+                    messages: [
+                        { role: 'system', content: '你是一个专业的会议纪要助手，请根据提供的会议内容生成结构化的会议纪要。' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `请求失败 (${response.status})`);
+            }
+            
+            const result = await response.json();
+            return result.choices[0].message.content;
+            
+        } catch (error) {
+            console.error('代理调用失败，尝试直连:', error);
+            
+            // 备用：直接调用API
+            const response = await fetch(`${settings.url}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${settings.key}`
+                },
+                body: JSON.stringify({
+                    model: settings.model,
+                    messages: [
+                        { role: 'system', content: '你是一个专业的会议纪要助手，请根据提供的会议内容生成结构化的会议纪要。' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 2000
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API请求失败: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            return result.choices[0].message.content;
         }
-        
-        const result = await response.json();
-        return result.choices[0].message.content;
     }
     
     buildMinutesPrompt(contents) {

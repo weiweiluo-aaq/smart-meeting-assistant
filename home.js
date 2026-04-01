@@ -164,14 +164,15 @@ async function testApiConnection() {
     resultDiv.classList.add('bg-blue-100', 'text-blue-800');
     
     try {
-        // 简单测试：发送一个简单的chat请求
-        const response = await fetch(`${settings.url}/chat/completions`, {
+        // 使用代理API测试（解决CORS问题）
+        const response = await fetch('/api/ai-proxy', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${settings.key}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                url: `${settings.url}/chat/completions`,
+                key: settings.key,
                 model: settings.model,
                 messages: [{ role: 'user', content: 'Hi' }],
                 max_tokens: 5
@@ -179,10 +180,15 @@ async function testApiConnection() {
         });
         
         if (response.ok) {
-            resultDiv.classList.remove('bg-blue-100', 'text-blue-800');
-            resultDiv.classList.add('bg-green-100', 'text-green-800');
-            resultDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>连接成功！API配置正确。';
-            showNotification('API连接测试成功！', 'success');
+            const data = await response.json();
+            if (data.choices && data.choices[0]) {
+                resultDiv.classList.remove('bg-blue-100', 'text-blue-800');
+                resultDiv.classList.add('bg-green-100', 'text-green-800');
+                resultDiv.innerHTML = '<i class="fas fa-check-circle mr-2"></i>连接成功！API配置正确。';
+                showNotification('API连接测试成功！', 'success');
+            } else {
+                throw new Error('响应格式错误');
+            }
         } else {
             const error = await response.json().catch(() => ({}));
             throw new Error(error.error?.message || `HTTP ${response.status}`);
