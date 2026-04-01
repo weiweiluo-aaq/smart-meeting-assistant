@@ -159,7 +159,10 @@ class MeetingAssistant {
                 refreshBtn.disabled = true;
             }
 
-            const response = await fetch(`/api?meetingId=${this.meetingId}`);
+            // 使用绝对路径访问API
+            const apiUrl = new URL('/api/meeting', window.location.origin);
+            apiUrl.searchParams.set('meetingId', this.meetingId);
+            const response = await fetch(apiUrl);
             const result = await response.json();
 
             if (result.success && result.data) {
