@@ -280,24 +280,25 @@ class MeetingRoom {
             return;
         }
         
-        const analyzeBtn = document.querySelector('button[onclick="analyzeMeeting()"]');
+        // 打开右侧边栏
+        this.openAnalysisSidebar();
+        
+        const analyzeBtn = document.getElementById('analyze-btn');
         const originalText = analyzeBtn.innerHTML;
         
         // 显示加载状态
-        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>连接AI服务...';
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>连接中...';
         analyzeBtn.disabled = true;
         
-        // 显示分析区域（带加载动画）
-        const modal = document.getElementById('analysis-modal');
+        // 在边栏中显示加载动画
         const container = document.getElementById('analysis-content');
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12">
                 <div class="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-gray-600 mb-2">正在调用AI服务分析会议内容...</p>
+                <p class="text-gray-600 mb-2">正在调用AI服务分析...</p>
                 <p class="text-sm text-gray-400">预计需要 5-15 秒</p>
             </div>
         `;
-        modal.classList.remove('hidden');
         
         try {
             // 获取API配置
@@ -322,9 +323,9 @@ class MeetingRoom {
                 <div class="text-center py-8">
                     <div class="text-red-500 text-5xl mb-4"><i class="fas fa-exclamation-circle"></i></div>
                     <p class="text-red-600 font-semibold mb-2">分析失败</p>
-                    <p class="text-gray-600 text-sm">${error.message}</p>
-                    <button onclick="closeAnalysis()" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm">
-                        关闭
+                    <p class="text-gray-600 text-sm mb-3">${error.message}</p>
+                    <button onclick="this.parentElement.parentElement.classList.add('translate-x-full');" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                        关闭边栏
                     </button>
                 </div>
             `;
@@ -469,29 +470,26 @@ class MeetingRoom {
     
     // 显示AI分析结果
     showAIAnalysisResult(analysisText) {
-        const modal = document.getElementById('analysis-modal');
         const container = document.getElementById('analysis-content');
         
         // 将Markdown转换为HTML（简单处理）
         const htmlContent = this.markdownToHtml(analysisText);
         
-        container.innerHTML = `<div class="prose max-w-none">${htmlContent}</div>`;
-        modal.classList.remove('hidden');
+        container.innerHTML = `<div class="prose max-w-none text-sm">${htmlContent}</div>`;
     }
     
     // 简单的Markdown转HTML
     markdownToHtml(text) {
         return text
-            .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-gray-800 mt-6 mb-3">$1</h2>')
-            .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">$1</h3>')
-            .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-            .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 mb-1">$2</li>')
-            .replace(/\n\n/g, '</p><p class="mb-3">')
+            .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-gray-800 mt-4 mb-2 border-b pb-1">$1</h2>')
+            .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-800 mt-3 mb-2">$1</h3>')
+            .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1 text-gray-700">$1</li>')
+            .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 mb-1 text-gray-700">$2</li>')
+            .replace(/\n\n/g, '</p><p class="mb-2 text-gray-700">')
             .replace(/\n/g, '<br>');
     }
     
     showAnalysisResult(result) {
-        const modal = document.getElementById('analysis-modal');
         const container = document.getElementById('analysis-content');
         
         const priorityStyles = {
@@ -501,23 +499,23 @@ class MeetingRoom {
         };
         
         container.innerHTML = `
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">会议总结</h3>
-                <p class="text-gray-700">${result.summary}</p>
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-gray-800 mb-2">会议总结</h3>
+                <p class="text-gray-700 text-sm">${result.summary}</p>
             </div>
             
             ${Object.keys(result.topicClassification.distribution).length > 0 ? `
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">主题分布</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="mb-4">
+                    <h3 class="text-base font-semibold text-gray-800 mb-2">主题分布</h3>
+                    <div class="grid grid-cols-2 gap-2">
                         ${Object.entries(result.topicClassification.distribution).map(([topic, percent]) => `
-                            <div class="bg-gray-50 rounded-lg p-3">
+                            <div class="bg-gray-50 rounded-lg p-2">
                                 <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-medium text-gray-700">${topic}</span>
-                                    <span class="text-sm text-gray-500">${percent}%</span>
+                                    <span class="text-xs font-medium text-gray-700">${topic}</span>
+                                    <span class="text-xs text-gray-500">${percent}%</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: ${percent}%"></div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
                                 </div>
                             </div>
                         `).join('')}
@@ -526,15 +524,15 @@ class MeetingRoom {
             ` : ''}
             
             ${result.actionItems.length > 0 ? `
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">行动项 (${result.actionItems.length})</h3>
+                <div class="mb-4">
+                    <h3 class="text-base font-semibold text-gray-800 mb-2">行动项 (${result.actionItems.length})</h3>
                     <div class="space-y-2">
                         ${result.actionItems.map(item => `
-                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <span class="px-2 py-1 text-xs rounded ${priorityStyles[item.priority] || 'bg-gray-100 text-gray-800'}">
+                            <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                <span class="px-2 py-0.5 text-xs rounded ${priorityStyles[item.priority] || 'bg-gray-100 text-gray-800'}">
                                     ${item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低'}
                                 </span>
-                                <span class="text-gray-700">${item.description}</span>
+                                <span class="text-gray-700 text-sm">${item.description}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -542,11 +540,11 @@ class MeetingRoom {
             ` : ''}
             
             ${result.discussionPoints.length > 0 ? `
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3">讨论要点</h3>
-                    <ul class="space-y-2">
+                <div class="mb-4">
+                    <h3 class="text-base font-semibold text-gray-800 mb-2">讨论要点</h3>
+                    <ul class="space-y-1">
                         ${result.discussionPoints.map(point => `
-                            <li class="flex items-start gap-2">
+                            <li class="flex items-start gap-2 text-sm">
                                 <i class="fas fa-circle text-blue-500 mt-1.5 text-xs"></i>
                                 <span class="text-gray-700">${point}</span>
                             </li>
@@ -555,12 +553,67 @@ class MeetingRoom {
                 </div>
             ` : ''}
         `;
-        
-        modal.classList.remove('hidden');
     }
     
     closeAnalysis() {
-        document.getElementById('analysis-modal').classList.add('hidden');
+        this.closeAnalysisSidebar();
+    }
+    
+    // 打开/关闭分析边栏
+    openAnalysisSidebar() {
+        // 先关闭会议纪要边栏
+        this.closeMinutesSidebar();
+        document.getElementById('analysis-sidebar').classList.remove('translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+        document.getElementById('sidebar-toggle-btn').classList.remove('opacity-0', 'pointer-events-none');
+    }
+    
+    closeAnalysisSidebar() {
+        document.getElementById('analysis-sidebar').classList.add('translate-x-full');
+        document.getElementById('sidebar-toggle-btn').classList.add('opacity-0', 'pointer-events-none');
+        if (!document.getElementById('minutes-sidebar').classList.contains('translate-x-full')) {
+            // 如果会议纪要边栏开着，不关遮罩
+        } else {
+            document.getElementById('sidebar-overlay').classList.add('hidden');
+        }
+    }
+    
+    toggleAnalysisSidebar() {
+        const sidebar = document.getElementById('analysis-sidebar');
+        if (sidebar.classList.contains('translate-x-full')) {
+            this.openAnalysisSidebar();
+        } else {
+            this.closeAnalysisSidebar();
+        }
+    }
+    
+    // 打开/关闭会议纪要边栏
+    openMinutesSidebar() {
+        // 先关闭分析边栏
+        this.closeAnalysisSidebar();
+        document.getElementById('minutes-sidebar').classList.remove('translate-x-full');
+        document.getElementById('sidebar-overlay').classList.remove('hidden');
+        document.getElementById('minutes-sidebar-toggle-btn').classList.remove('opacity-0', 'pointer-events-none');
+    }
+    
+    closeMinutesSidebar() {
+        document.getElementById('minutes-sidebar').classList.add('translate-x-full');
+        document.getElementById('minutes-sidebar-toggle-btn').classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+    
+    toggleMinutesSidebar() {
+        const sidebar = document.getElementById('minutes-sidebar');
+        if (sidebar.classList.contains('translate-x-full')) {
+            this.openMinutesSidebar();
+        } else {
+            this.closeMinutesSidebar();
+        }
+    }
+    
+    closeAllSidebars() {
+        this.closeAnalysisSidebar();
+        this.closeMinutesSidebar();
     }
     
     async generateMinutes() {
@@ -571,13 +624,15 @@ class MeetingRoom {
             return;
         }
         
+        // 打开右侧会议纪要边栏
+        this.openMinutesSidebar();
+        
         const btn = document.querySelector('button[onclick="generateMinutes()"]');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
         btn.disabled = true;
         
-        // 显示纪要区域（带加载动画）
-        const modal = document.getElementById('minutes-modal');
+        // 在边栏中显示加载动画
         const container = document.getElementById('minutes-content');
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12">
@@ -586,7 +641,6 @@ class MeetingRoom {
                 <p class="text-sm text-gray-400">预计需要 5-10 秒</p>
             </div>
         `;
-        modal.classList.remove('hidden');
         
         try {
             const apiSettings = JSON.parse(localStorage.getItem('apiSettings') || '{}');
@@ -806,28 +860,25 @@ ${participants.length > 0 ? participants.map(p => `- ${p}`).join('\n') : '- 未�
     }
     
     showMinutes() {
-        const modal = document.getElementById('minutes-modal');
         const container = document.getElementById('minutes-content');
         
-        const html = this.markdownToHtml(this.currentMinutes);
-        container.innerHTML = `<div class="prose max-w-none">${html}</div>`;
-        
-        modal.classList.remove('hidden');
+        const html = this.markdownMinutesToHtml(this.currentMinutes);
+        container.innerHTML = `<div class="prose max-w-none text-sm">${html}</div>`;
     }
     
-    markdownToHtml(md) {
+    markdownMinutesToHtml(md) {
         return md
-            .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-            .replace(/^## (.+)$/gm, '<h2 class="text-xl font-semibold mt-6 mb-3 border-b pb-2">$1</h2>')
-            .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold mb-4">$1</h1>')
+            .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-3 mb-2 text-gray-800">$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold mt-4 mb-2 border-b pb-1 text-gray-800">$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mb-3 text-gray-800">$1</h1>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
-            .replace(/\n\n/g, '</p><p class="mb-2">')
+            .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1 text-gray-700">$1</li>')
+            .replace(/\n\n/g, '</p><p class="mb-2 text-gray-700">')
             .replace(/\n/g, '<br>');
     }
     
     closeMinutes() {
-        document.getElementById('minutes-modal').classList.add('hidden');
+        this.closeMinutesSidebar();
     }
     
     copyMinutes() {
@@ -1032,5 +1083,8 @@ window.closeEndMeeting = () => window.meetingRoom?.closeEndMeeting();
 window.confirmEndMeeting = () => window.meetingRoom?.confirmEndMeeting();
 window.closeAnalysis = () => window.meetingRoom?.closeAnalysis();
 window.closeMinutes = () => window.meetingRoom?.closeMinutes();
+window.toggleAnalysisSidebar = () => window.meetingRoom?.toggleAnalysisSidebar();
+window.toggleMinutesSidebar = () => window.meetingRoom?.toggleMinutesSidebar();
+window.closeAllSidebars = () => window.meetingRoom?.closeAllSidebars();
 window.copyMinutes = () => window.meetingRoom?.copyMinutes();
 window.downloadMinutes = () => window.meetingRoom?.downloadMinutes();
