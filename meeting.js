@@ -41,7 +41,9 @@ class MeetingRoom {
     }
     
     generateQRCode() {
-        const meetingUrl = `${window.location.origin}${window.location.pathname.replace('meeting.html', 'input.html')}?meeting=${this.meetingId}`;
+        // 使用云端地址生成二维码
+        const cloudUrl = 'https://smart-meeting-assistant.pages.dev/input.html';
+        const meetingUrl = `${cloudUrl}?meeting=${this.meetingId}`;
         
         document.getElementById('meeting-url').textContent = meetingUrl;
         
@@ -70,8 +72,11 @@ class MeetingRoom {
     fallbackQRCode(meetingUrl) {
         const qrcodeContainer = document.getElementById('qrcode');
         qrcodeContainer.innerHTML = `
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(meetingUrl)}" 
-                 alt="会议二维码" class="border-4 border-gray-200 rounded-lg p-2">
+            <div class="flex flex-col items-center">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(meetingUrl)}" 
+                     alt="会议二维码" class="border-4 border-gray-200 rounded-lg p-2 mb-2">
+                <p class="text-xs text-gray-500">备用二维码</p>
+            </div>
         `;
     }
     
@@ -706,6 +711,36 @@ ${participants.length > 0 ? participants.map(p => `- ${p}`).join('\n') : '- 未�
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+    
+    refreshQRCode() {
+        // 使用云端地址生成二维码
+        const cloudUrl = 'https://smart-meeting-assistant.pages.dev/input.html';
+        const meetingUrl = `${cloudUrl}?meeting=${this.meetingId}&t=${Date.now()}`;
+        
+        document.getElementById('meeting-url').textContent = meetingUrl;
+        
+        const qrcodeContainer = document.getElementById('qrcode');
+        qrcodeContainer.innerHTML = '';
+        
+        const canvas = document.createElement('canvas');
+        qrcodeContainer.appendChild(canvas);
+        
+        try {
+            QRCode.toCanvas(canvas, meetingUrl, {
+                width: 180,
+                color: { dark: '#2563eb', light: '#ffffff' }
+            }, (error) => {
+                if (error) {
+                    console.error('QRCode生成失败:', error);
+                    this.fallbackQRCode(meetingUrl);
+                }
+            });
+            this.showNotification('二维码已刷新！', 'success');
+        } catch (error) {
+            console.error('QRCode.js不可用:', error);
+            this.fallbackQRCode(meetingUrl);
+        }
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -713,6 +748,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.refreshData = () => window.meetingRoom?.refreshData();
+window.refreshQRCode = () => window.meetingRoom?.refreshQRCode();
 window.addHostContent = () => window.meetingRoom?.addHostContent();
 window.insertTemplate = (text) => window.meetingRoom?.insertTemplate(text);
 window.analyzeMeeting = () => window.meetingRoom?.analyzeMeeting();
