@@ -47,6 +47,39 @@ export async function onRequestGet(context) {
     return handleAIProxy(request, env);
   }
 
+  // 同步请求：获取会议历史或待办事项
+  const syncType = url.searchParams.get('syncType');
+  if (syncType === 'meetingsHistory') {
+    try {
+      const data = await env.MEETING_DATA.get('global_meetingsHistory', 'json') || [];
+      return new Response(
+        JSON.stringify({ success: true, data: data }),
+        { headers: corsHeaders }
+      );
+    } catch (error) {
+      console.error('读取会议历史失败:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+  }
+  if (syncType === 'meetingTodos') {
+    try {
+      const data = await env.MEETING_DATA.get('global_meetingTodos', 'json') || [];
+      return new Response(
+        JSON.stringify({ success: true, data: data }),
+        { headers: corsHeaders }
+      );
+    } catch (error) {
+      console.error('读取待办事项失败:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+  }
+
   // 会议数据请求
   try {
     const meetingId = url.searchParams.get('meetingId');
@@ -81,6 +114,41 @@ export async function onRequestPost(context) {
   // AI 代理请求
   if (url.pathname.includes('/ai-proxy')) {
     return handleAIProxy(request, env);
+  }
+
+  // 同步请求：保存会议历史或待办事项
+  const syncType = url.searchParams.get('syncType');
+  if (syncType === 'meetingsHistory') {
+    try {
+      const body = await request.json();
+      await env.MEETING_DATA.put('global_meetingsHistory', JSON.stringify(body));
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: corsHeaders }
+      );
+    } catch (error) {
+      console.error('保存会议历史失败:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+  }
+  if (syncType === 'meetingTodos') {
+    try {
+      const body = await request.json();
+      await env.MEETING_DATA.put('global_meetingTodos', JSON.stringify(body));
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: corsHeaders }
+      );
+    } catch (error) {
+      console.error('保存待办事项失败:', error);
+      return new Response(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
   }
 
   // 会议数据请求

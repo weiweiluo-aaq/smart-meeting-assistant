@@ -15,8 +15,11 @@ class HistoryManager {
         this.updateStats();
     }
 
-    // 加载会议数据
-    loadMeetings() {
+    // 加载会议数据（优先从云端同步）
+    async loadMeetings() {
+        // 先同步云端数据
+        await cloudSync.syncMeetingsHistory();
+        
         this.meetings = JSON.parse(localStorage.getItem('meetingsHistory') || '[]');
         this.filteredMeetings = [...this.meetings];
         
@@ -490,6 +493,9 @@ function deleteMeeting(meetingId) {
         const meetings = JSON.parse(localStorage.getItem('meetingsHistory') || '[]');
         const updatedMeetings = meetings.filter(m => m.id !== meetingId);
         localStorage.setItem('meetingsHistory', JSON.stringify(updatedMeetings));
+        
+        // 同步到云端
+        cloudSync.saveMeetingsHistory(updatedMeetings);
         
         // 重新加载
         historyManager.loadMeetings();

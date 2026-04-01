@@ -16,8 +16,11 @@ class TodoManager {
         this.populateAssigneeFilter();
     }
 
-    // 加载待办事项
-    loadTodos() {
+    // 加载待办事项（优先从云端同步）
+    async loadTodos() {
+        // 先同步云端数据
+        await cloudSync.syncMeetingTodos();
+        
         this.todos = JSON.parse(localStorage.getItem('meetingTodos') || '[]');
         this.filteredTodos = [...this.todos];
         
@@ -293,6 +296,7 @@ class TodoManager {
         }
         
         localStorage.setItem('meetingTodos', JSON.stringify(this.todos));
+        cloudSync.saveMeetingTodos(this.todos);
         this.loadTodos();
         this.applyFilters();
         
@@ -305,6 +309,7 @@ class TodoManager {
         if (confirm('确定要删除这个待办事项吗？')) {
             this.todos = this.todos.filter(todo => todo.id !== todoId);
             localStorage.setItem('meetingTodos', JSON.stringify(this.todos));
+            cloudSync.saveMeetingTodos(this.todos);
             this.loadTodos();
             this.applyFilters();
             
@@ -328,6 +333,7 @@ class TodoManager {
             });
             
             localStorage.setItem('meetingTodos', JSON.stringify(this.todos));
+            cloudSync.saveMeetingTodos(this.todos);
             this.selectedTodos.clear();
             this.updateBatchButtons();
             this.loadTodos();
@@ -347,6 +353,7 @@ class TodoManager {
         if (confirm(`确定要删除 ${this.selectedTodos.size} 个待办事项吗？此操作不可恢复。`)) {
             this.todos = this.todos.filter(todo => !this.selectedTodos.has(todo.id));
             localStorage.setItem('meetingTodos', JSON.stringify(this.todos));
+            cloudSync.saveMeetingTodos(this.todos);
             this.selectedTodos.clear();
             this.updateBatchButtons();
             this.loadTodos();
