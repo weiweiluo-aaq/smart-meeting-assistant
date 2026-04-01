@@ -256,16 +256,124 @@ class MeetingRoom {
         analyzeBtn.disabled = true;
         
         try {
-            const analysisResult = await window.advancedAIAnalyzer.analyzeMeetingContents(allContents);
-            this.showAnalysisResult(analysisResult);
-            this.showNotification('分析完成！', 'success');
+            // 获取API配置
+            const apiSettings = JSON.parse(localStorage.getItem('apiSettings') || '{}');
+            
+            if (apiSettings.url && apiSettings.key && apiSettings.model) {
+                // 调用AI API分析
+                const analysisResult = await this.analyzeWithAI(allContents, apiSettings);
+                this.showAIAnalysisResult(analysisResult);
+                this.showNotification('分析完成！', 'success');
+            } else {
+                // 没有配置API，使用本地分析
+                const analysisResult = await window.advancedAIAnalyzer.analyzeMeetingContents(allContents);
+                this.showAnalysisResult(analysisResult);
+                this.showNotification('分析完成！（本地分析）', 'success');
+            }
         } catch (error) {
             console.error('分析失败:', error);
-            this.showNotification('分析失败，请重试', 'error');
+            this.showNotification('分析失败: ' + error.message, 'error');
         } finally {
             analyzeBtn.innerHTML = originalText;
             analyzeBtn.disabled = false;
         }
+    }
+    
+    // 使用AI API分析会议内容
+    async analyzeWithAI(contents, settings) {
+        const prompt = this.buildAnalysisPrompt(contents);
+        
+        const response = await fetch(`${settings.url}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${settings.key}`
+            },
+            body: JSON.stringify({
+                model: settings.model,
+                messages: [
+                    { role: 'system', content: `你是一个专业的会议分析助手。请根据会议内容进行分析总结。
+
+请按以下格式输出（使用Markdown格式）：
+
+## 📋 会议概述
+简要总结本次会议的主要内容
+
+## 🎯 核心要点
+- 列出3-5个最重要的讨论点
+
+## ⚠️ 需要关注的问题
+列出需要重点关注或跟进的问题
+
+## 📌 待推进事项
+列出待推进的问题和任务，并标注状态（进行中/已完成/待开始）
+
+## 💡 建议
+根据会议内容给出1-3条建议` },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        return result.choices[0].message.content;
+    }
+    
+    // 构建分析prompt
+    buildAnalysisPrompt(contents) {
+        const participants = [...new Set(contents.map(c => c.participant).filter(Boolean))];
+        const phoneContents = contents.filter(c => c.source !== 'host');
+        
+        let prompt = `【会议信息】
+- 会议编号：${this.meetingId}
+- 参会人数：${participants.length}人
+- 参会人员：${participants.join('、') || '未记录'}
+
+【会议内容】
+`;
+        
+        // 按人员整理内容
+        phoneContents.forEach((c, i) => {
+            prompt += `\n【${c.participant}的汇报】\n`;
+            if (c.lastWeek) prompt += `- 上周关键结果：${c.lastWeek}\n`;
+            if (c.thisWeek) prompt += `- 本周重点事项：${c.thisWeek}\n`;
+            if (c.blockers) prompt += `- 卡点 & 需要协调：${c.blockers}\n`;
+            if (c.risks) prompt += `- 风险 & 提醒：${c.risks}\n`;
+            if (c.others) prompt += `- 其他：${c.others}\n`;
+        });
+        
+        return prompt;
+    }
+    
+    // 显示AI分析结果
+    showAIAnalysisResult(analysisText) {
+        const section = document.getElementById('analysis-section');
+        const container = document.getElementById('analysis-content');
+        
+        // 将Markdown转换为HTML（简单处理）
+        const htmlContent = this.markdownToHtml(analysisText);
+        
+        container.innerHTML = `<div class="prose max-w-none">${htmlContent}</div>`;
+        section.classList.remove('hidden');
+        section.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 简单的Markdown转HTML
+    markdownToHtml(text) {
+        return text
+            .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-gray-800 mt-6 mb-3">$1</h2>')
+            .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">$1</h3>')
+            .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
+            .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 mb-1">$2</li>')
+            .replace(/\n\n/g, '</p><p class="mb-3">')
+            .replace(/\n/g, '<br>');
     }
     
     showAnalysisResult(result) {
