@@ -283,7 +283,17 @@ class MeetingRoom {
     async analyzeWithAI(contents, settings) {
         const prompt = this.buildAnalysisPrompt(contents);
         
-        const response = await fetch(`${settings.url}/chat/completions`, {
+        // 确保URL格式正确
+        let apiBaseUrl = settings.url.replace(/\/$/, ''); // 移除末尾斜杠
+        const apiUrl = `${apiBaseUrl}/chat/completions`;
+        
+        console.log('========== AI分析调试信息 ==========');
+        console.log('API基础URL:', settings.url);
+        console.log('处理后API URL:', apiUrl);
+        console.log('API Model:', settings.model);
+        console.log('API Key长度:', settings.key ? settings.key.length : 0);
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -317,12 +327,21 @@ class MeetingRoom {
             })
         });
         
+        console.log('API响应状态:', response.status);
+        
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+            console.error('API错误:', errorText);
+            throw new Error(`API请求失败 (${response.status}): ${errorText}`);
         }
         
         const result = await response.json();
+        console.log('API响应结果:', result);
+        
+        if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+            throw new Error('API响应格式错误');
+        }
+        
         return result.choices[0].message.content;
     }
     
