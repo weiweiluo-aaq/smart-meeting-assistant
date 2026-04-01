@@ -1,7 +1,6 @@
 name = "smart-meeting-assistant"
 compatibility_date = "2024-01-01"
 
-[env.production]
-[[env.production.kv_namespaces]]
+[[kv_namespaces]]
 binding = "MEETING_DATA"
-id = "meeting-assistant-data"  # KV 命名空间 ID，需要先创建
+id = "186b2e52d0ba4d20888696c83a5adc6b"
