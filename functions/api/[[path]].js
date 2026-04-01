@@ -59,7 +59,7 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const { meetingId, content, participant } = body;
+    const { meetingId, participant, lastWeek, thisWeek, blockers, risks, others } = body;
 
     if (!meetingId) {
       return new Response(
@@ -75,14 +75,19 @@ export async function onRequestPost(context) {
       createdAt: new Date().toISOString()
     };
 
-    // 添加新内容
-    if (content && participant) {
-      existingData.contents.push({
-        id: Date.now(),
-        content,
-        participant,
+    // 添加新内容（支持新字段格式）
+    if (participant) {
+      const newContent = {
+        id: `CONTENT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        participant: participant,
+        lastWeek: lastWeek || '',
+        thisWeek: thisWeek || '',
+        blockers: blockers || '',
+        risks: risks || '',
+        others: others || '',
         timestamp: new Date().toISOString()
-      });
+      };
+      existingData.contents.push(newContent);
 
       // 添加参与者（去重）
       if (!existingData.participants.includes(participant)) {
