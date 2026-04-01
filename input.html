@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>会议内容输入</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="optimized-styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-h-screen;
+        }
+        .input-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .voice-btn.active {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(245, 87, 108, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(245, 87, 108, 0);
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-md mx-auto">
+        <!-- 头部 -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-white mb-2">会议内容输入</h1>
+            <p class="text-white text-opacity-90">请输入您的会议汇报内容</p>
+        </div>
+
+        <!-- 输入卡片 -->
+        <div class="input-card rounded-2xl shadow-2xl p-6 mb-6">
+            <!-- 会议信息 -->
+            <div class="bg-blue-50 rounded-lg p-3 mb-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-blue-800">会议编号</span>
+                    <span id="meeting-id-display" class="text-sm text-blue-600 font-mono">加载中...</span>
+                </div>
+            </div>
+
+            <!-- 参与者名称输入 -->
+            <div class="mb-4">
+                <label for="participant-name" class="block text-sm font-medium text-gray-700 mb-1">您的姓名</label>
+                <input type="text" id="participant-name" placeholder="请输入您的姓名" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- 内容输入 -->
+            <div class="mb-4">
+                <label for="meeting-content" class="block text-sm font-medium text-gray-700 mb-1">会议内容</label>
+                <textarea id="meeting-content" rows="5" placeholder="请输入您的会议汇报内容，例如：
+• 重要事项
+• 待协助解决的问题
+• 工作进展更新
+• 需要讨论的议题" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                <div class="flex justify-between items-center mt-2">
+                    <span id="char-count" class="text-xs text-gray-500">0/500</span>
+                    <div class="flex gap-2">
+                        <button id="add-important" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>重要事项
+                        </button>
+                        <button id="add-help" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
+                            <i class="fas fa-hand-holding-heart mr-1"></i>需要协助
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 语音输入 -->
+            <div class="border-t border-gray-200 pt-4 mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">语音输入</label>
+                <div class="flex items-center gap-4">
+                    <button id="voice-record-btn" class="voice-btn w-16 h-16 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-lg hover:bg-purple-700 transition-all">
+                        <i class="fas fa-microphone text-2xl"></i>
+                    </button>
+                    <div class="flex-1">
+                        <div id="voice-status" class="text-sm text-gray-600">点击麦克风开始语音输入</div>
+                        <div id="voice-progress" class="hidden mt-2">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="voice-progress-bar" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提交按钮 -->
+            <button id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center">
+                <i class="fas fa-paper-plane mr-2"></i>提交内容
+            </button>
+        </div>
+
+        <!-- 快速输入模板 -->
+        <div class="input-card rounded-2xl shadow-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>快速输入模板
+            </h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="insertTemplate('工作进展：已完成XX任务，正在进行XX项目，预计XX时间完成。')" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm text-left transition-all">
+                    <i class="fas fa-chart-line text-blue-500 mr-1"></i>工作进展
+                </button>
+                <button onclick="insertTemplate('重要事项：需要关注XX问题，建议采取XX措施，预计影响XX。')" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm text-left transition-all">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>重要事项
+                </button>
+                <button onclick="insertTemplate('需要协助：在XX方面遇到困难，需要XX支持，希望在XX时间前解决。')" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm text-left transition-all">
+                    <i class="fas fa-hand-holding-heart text-red-500 mr-1"></i>需要协助
+                </button>
+                <button onclick="insertTemplate('建议讨论：提议讨论XX议题，因为XX原因，预计带来XX好处。')" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-lg text-sm text-left transition-all">
+                    <i class="fas fa-comments text-green-500 mr-1"></i>建议讨论
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提交弹窗 -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-sm text-center shadow-2xl">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-2xl text-green-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">提交成功！</h3>
+            <p class="text-gray-600 mb-6">您的会议内容已成功提交，感谢您的参与</p>
+            <button id="close-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all">
+                完成
+            </button>
+        </div>
+    </div>
+
+    <script src="input.js"></script>
+</body>
+</html>
